@@ -30,9 +30,40 @@ enum Priority {
   URGENT
 }
 
+enum TicketType {
+  BUG
+  FEATURE
+  QUESTION
+  INCIDENT
+  TASK
+  FEEDBACK
+  OTHER
+}
+
 enum MessageType {
   NOTE
   REPLY
+}
+
+enum ActivityType {
+  TICKET_CREATED
+  TICKET_UPDATED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  ESCALATED
+  DE_ESCALATED
+  TAG_ADDED
+  TAG_REMOVED
+  MERGED
+  REOPENED
+  CLOSED
+  RESOLVED
+  REPLY_ADDED
+  NOTE_ADDED
+  TYPE_CHANGED
+  CUSTOMER_REPLIED
 }
 
 enum ChannelType {
@@ -41,6 +72,8 @@ enum ChannelType {
   FORM
   SLACK
   DISCORD
+  PHONE
+  SOCIAL
 }
 
 enum AIProvider {
@@ -80,6 +113,9 @@ model Organization {
   chatConversations ChatConversation[]
   customerProfiles CustomerProfile[]
   visualWorkflows VisualWorkflow[]
+  cannedResponses CannedResponse[]
+  activities   ActivityLog[]
+  bulkOperations BulkOperation[]
   settings       OrganizationSettings?
 }
 
@@ -131,20 +167,27 @@ model User {
   ticketLocks     TicketLock[]
   workload        AgentWorkload?
   ticketCollaborations TicketCollaborator[]
+  cannedResponses CannedResponse[]
+  activities      ActivityLog[]
+  bulkOperations  BulkOperation[]
+  ticketMerges    TicketMerge[]
 }
 
 model Ticket {
   id            String        @id @default(cuid())
   subject       String
   description   String        @db.Text
+  type          TicketType    @default(QUESTION)
   status        TicketStatus  @default(OPEN)
   priority      Priority      @default(NORMAL)
+  dueAt         DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   resolvedAt    DateTime?
   closedAt      DateTime?
   escalatedAt   DateTime?
   escalatedReason String?
+  isMerged      Boolean       @default(false)
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
@@ -160,10 +203,22 @@ model Ticket {
   customerProfileId String?
   customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
 
+  mergedIntoId  String?
+  mergedInto    Ticket?       @relation("MergedTickets", fields: [mergedIntoId], references: [id])
+  mergedFrom    Ticket[]      @relation("MergedTickets")
+
   messages      Message[]
   tags          TicketTag[]
   formSubmissions FormSubmission[]
   escalationLogs EscalationLog[]
+  lock          TicketLock?
+  chatConversations ChatConversation[]
+  sentimentScores SentimentScore[]
+  collaborators TicketCollaborator[]
+  responseSuggestions ResponseSuggestion[]
+  workflowExecutions WorkflowExecution[]
+  activities    ActivityLog[]
+}
   lock          TicketLock?
   chatConversations ChatConversation[]
   sentimentScores SentimentScore[]
@@ -660,4 +715,82 @@ model WorkflowExecution {
 
   @@index([workflowId, startedAt])
   @@index([ticketId])
+}
+
+model CannedResponse {
+  id          String   @id @default(cuid())
+  name        String
+  content     String   @db.Text
+  category    String?
+  shortcuts   String[]
+  variables   Json?
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId, category])
+}
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  description String       @db.Text
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+
+  ticketId    String
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([type])
+}
+
+model TicketMerge {
+  id          String   @id @default(cuid())
+  mergedAt    DateTime @default(now())
+  reason      String?
+
+  primaryTicketId String
+  primaryTicket   Ticket  @relation("PrimaryMerge", fields: [primaryTicketId], references: [id])
+
+  mergedTicketId  String
+  mergedTicket    Ticket  @relation("MergedInto", fields: [mergedTicketId], references: [id])
+
+  mergedById  String
+  mergedBy    User    @relation(fields: [mergedById], references: [id])
+
+  @@unique([primaryTicketId, mergedTicketId])
+}
+
+model BulkOperation {
+  id          String   @id @default(cuid())
+  type        String
+  status      String   @default("pending")
+  totalCount  Int
+  processedCount Int   @default(0)
+  failedCount Int      @default(0)
+  errors      Json?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById String
+  createdBy   User    @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId, createdAt])
 }
