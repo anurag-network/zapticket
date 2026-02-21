@@ -52,7 +52,12 @@ export default function DashboardPage() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">ZapTicket</h1>
-          <Button variant="outline" onClick={handleLogout}>Sign Out</Button>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/settings">
+              <Button variant="ghost">Settings</Button>
+            </Link>
+            <Button variant="outline" onClick={handleLogout}>Sign Out</Button>
+          </div>
         </div>
       </header>
 
