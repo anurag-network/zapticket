@@ -59,6 +59,8 @@ model Organization {
   forms       Form[]
   workflows   Workflow[]
   apiKeys     ApiKey[]
+  channels    Channel[]
+  tags        Tag[]
   settings    OrganizationSettings?
 }
 
