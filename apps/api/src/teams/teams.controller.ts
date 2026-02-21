@@ -12,33 +12,38 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard, Roles } from '../common';
 
 @ApiTags('teams')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('teams')
 export class TeamsController {
   constructor(private teams: TeamsService) {}
 
   @Get()
+  @Roles('OWNER', 'ADMIN', 'AGENT', 'MEMBER')
   @ApiOperation({ summary: 'List all teams' })
   findAll(@Req() req: any) {
     return this.teams.findAll(req.user.organizationId);
   }
 
   @Post()
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({ summary: 'Create a team' })
   create(@Req() req: any, @Body() data: { name: string; description?: string }) {
     return this.teams.create(req.user.organizationId, data);
   }
 
   @Get(':id')
+  @Roles('OWNER', 'ADMIN', 'AGENT', 'MEMBER')
   @ApiOperation({ summary: 'Get team details with members' })
   findOne(@Param('id') id: string, @Req() req: any) {
     return this.teams.findOne(id, req.user.organizationId);
   }
 
   @Patch(':id')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({ summary: 'Update team' })
   update(
     @Param('id') id: string,
@@ -49,24 +54,28 @@ export class TeamsController {
   }
 
   @Delete(':id')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({ summary: 'Delete team' })
   delete(@Param('id') id: string, @Req() req: any) {
     return this.teams.delete(id, req.user.organizationId);
   }
 
   @Get(':id/members')
+  @Roles('OWNER', 'ADMIN', 'AGENT', 'MEMBER')
   @ApiOperation({ summary: 'Get team members' })
   getMembers(@Param('id') id: string, @Req() req: any) {
     return this.teams.getTeamMembers(id, req.user.organizationId);
   }
 
   @Post(':id/members')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({ summary: 'Add member to team' })
   addMember(@Param('id') id: string, @Body('userId') userId: string, @Req() req: any) {
     return this.teams.addMember(id, userId, req.user.organizationId);
   }
 
   @Delete(':id/members/:userId')
+  @Roles('OWNER', 'ADMIN')
   @ApiOperation({ summary: 'Remove member from team' })
   removeMember(@Param('id') id: string, @Param('userId') userId: string, @Req() req: any) {
     return this.teams.removeMember(id, userId, req.user.organizationId);

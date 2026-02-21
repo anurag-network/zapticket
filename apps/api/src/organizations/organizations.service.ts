@@ -25,6 +25,13 @@ export class OrganizationsService {
     return org;
   }
 
+  async update(id: string, data: { name?: string; slug?: string }) {
+    return this.prisma.organization.update({
+      where: { id },
+      data,
+    });
+  }
+
   async findBySlug(slug: string) {
     return this.prisma.organization.findUnique({ where: { slug } });
   }

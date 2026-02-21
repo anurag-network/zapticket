@@ -15,6 +15,14 @@ export class AuthController {
     private config: ConfigService
   ) {}
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user' })
+  getCurrentUser(@Req() req: any) {
+    return req.user;
+  }
+
   @Post('register')
   @ApiOperation({ summary: 'Register new user' })
   register(@Body() data: RegisterInput) {
