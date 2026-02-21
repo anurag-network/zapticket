@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
-import { WorkflowsService } from '../workflows/workflows.service';
-import { WebhooksService } from '../integrations/webhooks.service';
+import { EscalationService } from '../escalation/escalation.service';
 
 @Injectable()
 export class ScheduledTasksService {
@@ -10,34 +9,14 @@ export class ScheduledTasksService {
 
   constructor(
     private prisma: PrismaService,
-    private workflows: WorkflowsService,
-    private webhooks: WebhooksService
+    private escalation: EscalationService
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   async handleSlaBreaches() {
     this.logger.log('Checking for SLA breaches...');
-
-    const slaThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-    const breachedTickets = await this.prisma.ticket.findMany({
-      where: {
-        status: { in: ['OPEN', 'IN_PROGRESS'] },
-        createdAt: { lt: slaThreshold },
-      },
-      include: { organization: true },
-    });
-
-    for (const ticket of breachedTickets) {
-      await this.webhooks.trigger('ticket.sla_breach', ticket.organizationId, {
-        ticketId: ticket.id,
-        subject: ticket.subject,
-        createdAt: ticket.createdAt,
-        organizationId: ticket.organizationId,
-      });
-    }
-
-    this.logger.log(`Found ${breachedTickets.length} SLA breaches`);
+    const result = await this.escalation.autoEscalateSlaBreaches();
+    this.logger.log(`SLA check: ${result.checked} checked, ${result.escalated} escalated`);
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

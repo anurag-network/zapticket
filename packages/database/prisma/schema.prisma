@@ -18,6 +18,7 @@ enum TicketStatus {
   OPEN
   IN_PROGRESS
   WAITING_ON_CUSTOMER
+  ESCALATED
   RESOLVED
   CLOSED
 }
@@ -103,6 +104,8 @@ model User {
   createdTickets  Ticket[] @relation("CreatedTickets")
   messages        Message[]
   articles        Article[]
+  escalatedTickets EscalationLog[] @relation("EscalatedBy")
+  resolvedEscalations EscalationLog[] @relation("ResolvedBy")
 }
 
 model Ticket {
@@ -115,6 +118,8 @@ model Ticket {
   updatedAt     DateTime      @updatedAt
   resolvedAt    DateTime?
   closedAt      DateTime?
+  escalatedAt   DateTime?
+  escalatedReason String?
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
@@ -130,6 +135,7 @@ model Ticket {
   messages      Message[]
   tags          TicketTag[]
   formSubmissions FormSubmission[]
+  escalationLogs EscalationLog[]
 }
 
 model Message {
@@ -338,4 +344,21 @@ model ApiKey {
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model EscalationLog {
+  id          String   @id @default(cuid())
+  reason      String
+  autoEscalated Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  ticketId    String
+  ticket      Ticket  @relation(fields: [ticketId], references: [id])
+
+  escalatedById String?
+  escalatedBy   User?   @relation("EscalatedBy", fields: [escalatedById], references: [id])
+
+  resolvedAt  DateTime?
+  resolvedById String?
+  resolvedBy   User?    @relation("ResolvedBy", fields: [resolvedById], references: [id])
 }

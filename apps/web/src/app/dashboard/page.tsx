@@ -13,6 +13,7 @@ interface Metrics {
     createdThisWeek: number;
     createdThisMonth: number;
     slaBreaches: number;
+    escalated: number;
   };
   users: { total: number };
   knowledgeBase: { articles: number };
@@ -75,6 +76,7 @@ export default function DashboardPage() {
     OPEN: 'bg-blue-100 text-blue-800',
     IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
     WAITING_ON_CUSTOMER: 'bg-orange-100 text-orange-800',
+    ESCALATED: 'bg-red-100 text-red-800',
     RESOLVED: 'bg-green-100 text-green-800',
     CLOSED: 'bg-gray-100 text-gray-800',
   };
@@ -94,6 +96,8 @@ export default function DashboardPage() {
     );
   }
 
+  const escalatedCount = (stats?.byStatus?.ESCALATED || metrics?.tickets?.escalated || 0);
+
   return (
     <div className="min-h-screen">
       <header className="border-b">
@@ -112,8 +116,30 @@ export default function DashboardPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Escalated Alert */}
+        {escalatedCount > 0 && (
+          <Link href="/dashboard/escalated">
+            <Card className="mb-6 border-red-500 bg-red-50 cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🚨</span>
+                  <div>
+                    <p className="font-semibold text-red-800">
+                      {escalatedCount} Escalated Ticket{escalatedCount !== 1 ? 's' : ''} Require Attention
+                    </p>
+                    <p className="text-sm text-red-600">
+                      Click to view and resolve escalated tickets
+                    </p>
+                  </div>
+                </div>
+                <Button variant="destructive">View Escalated</Button>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+
         {/* Key Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground">Total Tickets</p>
@@ -128,6 +154,12 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground">Escalated</p>
+              <p className="text-3xl font-bold text-red-600">{escalatedCount}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground">Created Today</p>
               <p className="text-3xl font-bold">{metrics?.tickets.createdToday || 0}</p>
             </CardContent>
@@ -135,7 +167,7 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground">SLA Breaches</p>
-              <p className="text-3xl font-bold text-red-600">{metrics?.tickets.slaBreaches || 0}</p>
+              <p className="text-3xl font-bold text-orange-600">{metrics?.tickets.slaBreaches || 0}</p>
             </CardContent>
           </Card>
         </div>
@@ -158,7 +190,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2">
                       <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-full"
+                          className={`h-full rounded-full ${status === 'ESCALATED' ? 'bg-red-500' : 'bg-blue-500'}`}
                           style={{ width: `${(count / (stats?.total || 1)) * 100}%` }}
                         />
                       </div>
@@ -261,10 +293,15 @@ export default function DashboardPage() {
         </Card>
 
         {/* Quick Actions */}
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <Link href="/dashboard/tickets/new">
             <Button>New Ticket</Button>
           </Link>
+          {escalatedCount > 0 && (
+            <Link href="/dashboard/escalated">
+              <Button variant="destructive">🚨 Escalated ({escalatedCount})</Button>
+            </Link>
+          )}
           <Link href="/dashboard/kb">
             <Button variant="outline">Knowledge Base</Button>
           </Link>

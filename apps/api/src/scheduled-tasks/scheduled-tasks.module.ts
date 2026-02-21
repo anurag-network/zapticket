@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ScheduledTasksService } from './scheduled-tasks.service';
-import { WorkflowsModule } from '../workflows/workflows.module';
-import { IntegrationsModule } from '../integrations/integrations.module';
+import { EscalationModule } from '../escalation/escalation.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot(), WorkflowsModule, IntegrationsModule],
+  imports: [ScheduleModule.forRoot(), EscalationModule],
   providers: [ScheduledTasksService],
 })
 export class ScheduledTasksModule {}

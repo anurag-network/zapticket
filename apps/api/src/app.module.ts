@@ -11,6 +11,7 @@ import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportingModule } from './reporting/reporting.module';
+import { EscalationModule } from './escalation/escalation.module';
 import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -29,6 +30,7 @@ import { PrismaModule } from './prisma/prisma.module';
     WorkflowsModule,
     IntegrationsModule,
     ReportingModule,
+    EscalationModule,
     ScheduledTasksModule,
   ],
 })
