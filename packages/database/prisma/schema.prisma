@@ -116,6 +116,11 @@ model Organization {
   cannedResponses CannedResponse[]
   activities   ActivityLog[]
   bulkOperations BulkOperation[]
+  customerPortalUsers CustomerPortalUser[]
+  csatSurveys  CSATSurvey[]
+  agentAvailabilities AgentAvailability[]
+  notifications Notification[]
+  slaPolicies   SLAPolicy[]
   settings       OrganizationSettings?
 }
 
@@ -171,6 +176,9 @@ model User {
   activities      ActivityLog[]
   bulkOperations  BulkOperation[]
   ticketMerges    TicketMerge[]
+  availability    AgentAvailability?
+  availabilityHistory AgentAvailabilityHistory[]
+  notifications   Notification[]
 }
 
 model Ticket {
@@ -203,6 +211,9 @@ model Ticket {
   customerProfileId String?
   customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
 
+  customerPortalUserId String?
+  customerPortalUser   CustomerPortalUser? @relation(fields: [customerPortalUserId], references: [id])
+
   mergedIntoId  String?
   mergedInto    Ticket?       @relation("MergedTickets", fields: [mergedIntoId], references: [id])
   mergedFrom    Ticket[]      @relation("MergedTickets")
@@ -218,6 +229,9 @@ model Ticket {
   responseSuggestions ResponseSuggestion[]
   workflowExecutions WorkflowExecution[]
   activities    ActivityLog[]
+  csatSurvey    CSATSurvey?
+  notifications Notification[]
+  slaBreaches   SLABreach[]
 }
   lock          TicketLock?
   chatConversations ChatConversation[]
@@ -793,4 +807,166 @@ model BulkOperation {
   createdBy   User    @relation(fields: [createdById], references: [id])
 
   @@index([organizationId, createdAt])
+}
+
+enum AgentStatus {
+  ONLINE
+  AWAY
+  BUSY
+  OFFLINE
+}
+
+enum SLAPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model CustomerPortalUser {
+  id            String   @id @default(cuid())
+  email         String
+  name          String?
+  phone         String?
+  passwordHash  String?
+  avatarUrl     String?
+  emailVerified DateTime?
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  tickets        Ticket[]
+  csatResponses  CSATResponse[]
+
+  @@unique([email, organizationId])
+  @@index([organizationId])
+}
+
+model CSATSurvey {
+  id            String   @id @default(cuid())
+  rating        Int
+  comment       String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  ticketId      String   @unique
+  ticket        Ticket   @relation(fields: [ticketId], references: [id])
+
+  customerId    String?
+  customer      CustomerPortalUser? @relation(fields: [customerId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([rating])
+}
+
+model CSATResponse {
+  id            String   @id @default(cuid())
+  rating        Int
+  comment       String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  surveyId      String
+  survey        CSATSurvey @relation(fields: [surveyId], references: [id])
+
+  customerId    String
+  customer      CustomerPortalUser @relation(fields: [customerId], references: [id])
+
+  @@index([surveyId])
+}
+
+model AgentAvailability {
+  id            String      @id @default(cuid())
+  status        AgentStatus @default(OFFLINE)
+  statusMessage String?
+  lastSeenAt    DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  agentId       String      @unique
+  agent         User        @relation(fields: [agentId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status])
+}
+
+model AgentAvailabilityHistory {
+  id          String      @id @default(cuid())
+  status      AgentStatus
+  duration    Int
+  startedAt   DateTime    @default(now())
+  endedAt     DateTime?
+
+  agentId     String
+  agent       User        @relation(fields: [agentId], references: [id])
+
+  @@index([agentId, startedAt])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  message     String   @db.Text
+  data        Json?
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  ticketId    String?
+  ticket      Ticket?  @relation(fields: [ticketId], references: [id])
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+model SLAPolicy {
+  id                  String   @id @default(cuid())
+  name                String
+  description         String?
+  priority            SLAPriority
+  responseTimeMinutes Int
+  resolutionTimeMinutes Int
+  businessHoursOnly   Boolean  @default(false)
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  breaches      SLABreach[]
+
+  @@index([organizationId, active])
+  @@index([priority])
+}
+
+model SLABreach {
+  id            String   @id @default(cuid())
+  breachType    String
+  breachedAt    DateTime @default(now())
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+
+  ticketId      String
+  ticket        Ticket   @relation(fields: [ticketId], references: [id])
+
+  policyId      String
+  policy        SLAPolicy @relation(fields: [policyId], references: [id])
+
+  @@index([ticketId])
+  @@index([breachedAt])
 }

@@ -25,6 +25,11 @@ import { ActivityLogModule } from './activity-log/activity-log.module';
 import { CannedResponsesModule } from './canned-responses/canned-responses.module';
 import { TicketMergeModule } from './ticket-merge/ticket-merge.module';
 import { BulkOperationsModule } from './bulk-operations/bulk-operations.module';
+import { CustomerPortalModule } from './customer-portal/customer-portal.module';
+import { CSATModule } from './csat/csat.module';
+import { AgentAvailabilityModule } from './agent-availability/agent-availability.module';
+import { NotificationModule } from './notifications/notification.module';
+import { SLAModule } from './sla/sla.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -32,6 +37,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     ActivityLogModule,
+    NotificationModule,
     AuthModule,
     UsersModule,
     TicketsModule,
@@ -56,6 +62,10 @@ import { PrismaModule } from './prisma/prisma.module';
     CannedResponsesModule,
     TicketMergeModule,
     BulkOperationsModule,
+    CustomerPortalModule,
+    CSATModule,
+    AgentAvailabilityModule,
+    SLAModule,
   ],
 })
 export class AppModule {}
