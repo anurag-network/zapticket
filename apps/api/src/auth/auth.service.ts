@@ -60,6 +60,30 @@ export class AuthService {
     });
   }
 
+  async validateOAuthUser(profile: { email: string; name?: string; avatarUrl?: string }) {
+    let user = await this.prisma.user.findUnique({
+      where: { email: profile.email },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email: profile.email,
+          name: profile.name,
+          avatarUrl: profile.avatarUrl,
+        },
+      });
+    } else if (!user.avatarUrl && profile.avatarUrl) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { avatarUrl: profile.avatarUrl },
+      });
+    }
+
+    const tokens = await this.generateTokens(user.id);
+    return { user: this.sanitizeUser(user), ...tokens };
+  }
+
   private async generateTokens(userId: string) {
     const accessToken = this.jwt.sign({ sub: userId });
     const refreshToken = this.jwt.sign({ sub: userId, type: 'refresh' }, { expiresIn: '30d' });
