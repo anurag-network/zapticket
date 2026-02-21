@@ -16,6 +16,11 @@ import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { TicketLockModule } from './ticket-lock/ticket-lock.module';
 import { AssignmentModule } from './assignment/assignment.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
+import { SentimentModule } from './sentiment/sentiment.module';
+import { SmartResponsesModule } from './smart-responses/smart-responses.module';
+import { CustomerHealthModule } from './customer-health/customer-health.module';
+import { CollaborationModule } from './collaboration/collaboration.module';
+import { VisualWorkflowModule } from './visual-workflow/visual-workflow.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -38,6 +43,11 @@ import { PrismaModule } from './prisma/prisma.module';
     TicketLockModule,
     AssignmentModule,
     ChatbotModule,
+    SentimentModule,
+    SmartResponsesModule,
+    CustomerHealthModule,
+    CollaborationModule,
+    VisualWorkflowModule,
   ],
 })
 export class AppModule {}

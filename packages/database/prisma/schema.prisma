@@ -78,6 +78,8 @@ model Organization {
   agentWorkloads AgentWorkload[]
   chatbotConfig  ChatbotConfig?
   chatConversations ChatConversation[]
+  customerProfiles CustomerProfile[]
+  visualWorkflows VisualWorkflow[]
   settings       OrganizationSettings?
 }
 
@@ -128,6 +130,7 @@ model User {
   resolvedEscalations EscalationLog[] @relation("ResolvedBy")
   ticketLocks     TicketLock[]
   workload        AgentWorkload?
+  ticketCollaborations TicketCollaborator[]
 }
 
 model Ticket {
@@ -154,12 +157,19 @@ model Ticket {
   channelId     String?
   channel       Channel?      @relation(fields: [channelId], references: [id])
 
+  customerProfileId String?
+  customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+
   messages      Message[]
   tags          TicketTag[]
   formSubmissions FormSubmission[]
   escalationLogs EscalationLog[]
   lock          TicketLock?
   chatConversations ChatConversation[]
+  sentimentScores SentimentScore[]
+  collaborators TicketCollaborator[]
+  responseSuggestions ResponseSuggestion[]
+  workflowExecutions WorkflowExecution[]
 }
 
 model Message {
@@ -175,6 +185,7 @@ model Message {
   author      User        @relation(fields: [authorId], references: [id])
 
   attachments Attachment[]
+  sentiment   SentimentScore?
 }
 
 model Attachment {
@@ -499,4 +510,154 @@ model ChatMessage {
   conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
+}
+
+enum SentimentType {
+  VERY_NEGATIVE
+  NEGATIVE
+  NEUTRAL
+  POSITIVE
+  VERY_POSITIVE
+}
+
+model SentimentScore {
+  id          String       @id @default(cuid())
+  score       Float
+  type        SentimentType
+  confidence  Float
+  keywords    String[]
+  analyzedAt  DateTime     @default(now())
+
+  ticketId    String?
+  ticket      Ticket?      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  messageId   String?
+  message     Message?     @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, analyzedAt])
+  @@index([type])
+}
+
+model CustomerProfile {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  phone           String?
+  company         String?
+  notes           String?  @db.Text
+  healthScore     Float    @default(50)
+  healthStatus    String   @default("neutral")
+  totalTickets    Int      @default(0)
+  openTickets     Int      @default(0)
+  avgSatisfaction Float?
+  lastContactAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  tickets         Ticket[]
+  healthHistory   CustomerHealthHistory[]
+  interactions    CustomerInteraction[]
+
+  @@index([organizationId, healthScore])
+  @@index([email])
+}
+
+model CustomerHealthHistory {
+  id              String   @id @default(cuid())
+  score           Float
+  status          String
+  reason          String?
+  recordedAt      DateTime @default(now())
+
+  customerProfileId String
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([customerProfileId, recordedAt])
+}
+
+model CustomerInteraction {
+  id              String   @id @default(cuid())
+  type            String
+  summary         String?  @db.Text
+  sentiment       Float?
+  occurredAt      DateTime @default(now())
+
+  customerProfileId String
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+
+  ticketId        String?
+  ticket          Ticket?  @relation(fields: [ticketId], references: [id])
+
+  @@index([customerProfileId, occurredAt])
+}
+
+model TicketCollaborator {
+  id          String   @id @default(cuid())
+  joinedAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  isEditing   Boolean  @default(false)
+  cursorPosition Json?
+
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([ticketId, userId])
+  @@index([ticketId])
+}
+
+model ResponseSuggestion {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  source      String
+  confidence  Float
+  used        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+}
+
+model VisualWorkflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  nodes       Json
+  edges       Json
+  active      Boolean  @default(true)
+  triggerType String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  executions   WorkflowExecution[]
+
+  @@index([organizationId, active])
+}
+
+model WorkflowExecution {
+  id           String   @id @default(cuid())
+  status       String   @default("pending")
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  error        String?  @db.Text
+  executionLog Json?
+
+  workflowId   String
+  workflow     VisualWorkflow @relation(fields: [workflowId], references: [id])
+
+  ticketId     String?
+  ticket       Ticket?  @relation(fields: [ticketId], references: [id])
+
+  @@index([workflowId, startedAt])
+  @@index([ticketId])
 }
