@@ -232,13 +232,9 @@ model Ticket {
   csatSurvey    CSATSurvey?
   notifications Notification[]
   slaBreaches   SLABreach[]
-}
-  lock          TicketLock?
-  chatConversations ChatConversation[]
-  sentimentScores SentimentScore[]
-  collaborators TicketCollaborator[]
-  responseSuggestions ResponseSuggestion[]
-  workflowExecutions WorkflowExecution[]
+  customerInteractions CustomerInteraction[]
+  primaryTicketMerges TicketMerge[] @relation("PrimaryMerge")
+  mergedTicketRecords TicketMerge[] @relation("MergedInto")
 }
 
 model Message {
@@ -600,7 +596,7 @@ model SentimentScore {
   ticketId    String?
   ticket      Ticket?      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
-  messageId   String?
+  messageId   String?  @unique
   message     Message?     @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([ticketId, analyzedAt])
@@ -839,6 +835,7 @@ model CustomerPortalUser {
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   tickets        Ticket[]
+  csatSurveys    CSATSurvey[]
   csatResponses  CSATResponse[]
 
   @@unique([email, organizationId])
@@ -859,6 +856,8 @@ model CSATSurvey {
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  responses      CSATResponse[]
 
   @@index([organizationId, createdAt])
   @@index([rating])
