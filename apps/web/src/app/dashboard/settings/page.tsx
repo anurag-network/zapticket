@@ -24,6 +24,12 @@ const settingsItems = [
     icon: '📝',
   },
   {
+    title: 'Integrations',
+    description: 'Webhooks, Slack, Discord, API keys',
+    href: '/dashboard/settings/integrations',
+    icon: '🔌',
+  },
+  {
     title: 'Organization',
     description: 'Organization settings and branding',
     href: '/dashboard/settings/organization',
@@ -50,7 +56,7 @@ export default function SettingsPage() {
       <main className="container mx-auto px-4 py-8">
         <h2 className="text-2xl font-semibold mb-6">Settings</h2>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {settingsItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
