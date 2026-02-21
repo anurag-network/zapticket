@@ -10,6 +10,8 @@ import { FormsModule } from './forms/forms.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { ReportingModule } from './reporting/reporting.module';
+import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -26,6 +28,8 @@ import { PrismaModule } from './prisma/prisma.module';
     KnowledgeBaseModule,
     WorkflowsModule,
     IntegrationsModule,
+    ReportingModule,
+    ScheduledTasksModule,
   ],
 })
 export class AppModule {}
