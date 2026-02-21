@@ -56,6 +56,7 @@ model Organization {
   categories  Category[]
   webhooks    Webhook[]
   forms       Form[]
+  workflows   Workflow[]
   settings    OrganizationSettings?
 }
 
@@ -309,4 +310,19 @@ model FormSubmission {
 
   ticketId String?
   ticket   Ticket? @relation(fields: [ticketId], references: [id])
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  trigger     Json
+  actions     Json
+  active      Boolean  @default(true)
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
 }

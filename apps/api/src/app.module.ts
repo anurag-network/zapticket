@@ -7,6 +7,8 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { TeamsModule } from './teams/teams.module';
 import { EmailModule } from './email/email.module';
 import { FormsModule } from './forms/forms.module';
+import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
+import { WorkflowsModule } from './workflows/workflows.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -20,6 +22,8 @@ import { PrismaModule } from './prisma/prisma.module';
     TeamsModule,
     EmailModule,
     FormsModule,
+    KnowledgeBaseModule,
+    WorkflowsModule,
   ],
 })
 export class AppModule {}

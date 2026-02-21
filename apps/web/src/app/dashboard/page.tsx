@@ -53,6 +53,9 @@ export default function DashboardPage() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">ZapTicket</h1>
           <div className="flex items-center gap-3">
+            <Link href="/dashboard/kb">
+              <Button variant="ghost">Knowledge Base</Button>
+            </Link>
             <Link href="/dashboard/settings">
               <Button variant="ghost">Settings</Button>
             </Link>
