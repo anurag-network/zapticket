@@ -43,6 +43,19 @@ enum ChannelType {
   DISCORD
 }
 
+enum AIProvider {
+  OPENAI
+  ANTHROPIC
+  OLLAMA
+}
+
+enum ChatbotStatus {
+  GREETING
+  COLLECTING_INFO
+  CREATING_TICKET
+  COMPLETED
+}
+
 model Organization {
   id          String   @id @default(cuid())
   name        String
@@ -63,6 +76,8 @@ model Organization {
   tags           Tag[]
   assignmentRules AssignmentRule[]
   agentWorkloads AgentWorkload[]
+  chatbotConfig  ChatbotConfig?
+  chatConversations ChatConversation[]
   settings       OrganizationSettings?
 }
 
@@ -144,6 +159,7 @@ model Ticket {
   formSubmissions FormSubmission[]
   escalationLogs EscalationLog[]
   lock          TicketLock?
+  chatConversations ChatConversation[]
 }
 
 model Message {
@@ -424,4 +440,63 @@ model AgentWorkload {
   organization    Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId, openTickets])
+}
+
+model ChatbotConfig {
+  id              String     @id @default(cuid())
+  name            String     @default("Zapdeck")
+  welcomeMessage  String     @default("Hi! I'm Zapdeck, your support assistant. How can I help you today?")
+  aiProvider      AIProvider @default(OPENAI)
+  apiKey          String?
+  apiEndpoint     String?
+  model           String     @default("gpt-4")
+  temperature     Float      @default(0.7)
+  maxTokens       Int        @default(500)
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  organizationId  String     @unique
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  conversations   ChatConversation[]
+}
+
+model ChatConversation {
+  id              String        @id @default(cuid())
+  sessionId       String        @unique
+  status          ChatbotStatus @default(GREETING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  visitorName     String?
+  visitorEmail    String?
+  category        String?
+  description     String?
+  
+  ticketId        String?
+  ticket          Ticket?       @relation(fields: [ticketId], references: [id])
+
+  chatbotConfigId String?
+  chatbotConfig   ChatbotConfig? @relation(fields: [chatbotConfigId], references: [id])
+
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+
+  messages        ChatMessage[]
+
+  @@index([sessionId])
+  @@index([organizationId, createdAt])
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  content        String   @db.Text
+  isBot          Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }

@@ -15,6 +15,7 @@ import { EscalationModule } from './escalation/escalation.module';
 import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { TicketLockModule } from './ticket-lock/ticket-lock.module';
 import { AssignmentModule } from './assignment/assignment.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ScheduledTasksModule,
     TicketLockModule,
     AssignmentModule,
+    ChatbotModule,
   ],
 })
 export class AppModule {}
