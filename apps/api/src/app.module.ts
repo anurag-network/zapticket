@@ -13,6 +13,8 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportingModule } from './reporting/reporting.module';
 import { EscalationModule } from './escalation/escalation.module';
 import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
+import { TicketLockModule } from './ticket-lock/ticket-lock.module';
+import { AssignmentModule } from './assignment/assignment.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -32,6 +34,8 @@ import { PrismaModule } from './prisma/prisma.module';
     ReportingModule,
     EscalationModule,
     ScheduledTasksModule,
+    TicketLockModule,
+    AssignmentModule,
   ],
 })
 export class AppModule {}
