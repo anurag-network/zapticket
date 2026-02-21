@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  AGENT
+  MEMBER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum MessageType {
+  NOTE
+  REPLY
+}
+
+enum ChannelType {
+  EMAIL
+  CHAT
+  FORM
+  SLACK
+  DISCORD
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teams       Team[]
+  members     User[]
+  tickets     Ticket[]
+  articles    Article[]
+  categories  Category[]
+  webhooks    Webhook[]
+  settings    OrganizationSettings?
+}
+
+model OrganizationSettings {
+  id             String   @id @default(cuid())
+  timezone       String   @default("UTC")
+  logoUrl        String?
+  primaryColor   String   @default("#3b82f6")
+
+  organizationId String   @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model Team {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  members        User[]
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  passwordHash  String?
+  avatarUrl     String?
+  role          Role     @default(MEMBER)
+  emailVerified DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  teamId         String?
+  team           Team? @relation(fields: [teamId], references: [id])
+  
+  assignedTickets Ticket[] @relation("AssignedTickets")
+  createdTickets  Ticket[] @relation("CreatedTickets")
+  messages        Message[]
+  articles        Article[]
+}
+
+model Ticket {
+  id            String        @id @default(cuid())
+  subject       String
+  description   String        @db.Text
+  status        TicketStatus  @default(OPEN)
+  priority      Priority      @default(NORMAL)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  assigneeId    String?
+  assignee      User?         @relation("AssignedTickets", fields: [assigneeId], references: [id])
+  creatorId     String
+  creator       User          @relation("CreatedTickets", fields: [creatorId], references: [id])
+
+  channelId     String?
+  channel       Channel?      @relation(fields: [channelId], references: [id])
+
+  messages      Message[]
+  tags          TicketTag[]
+}
+
+model Message {
+  id          String      @id @default(cuid())
+  content     String      @db.Text
+  type        MessageType @default(REPLY)
+  createdAt   DateTime    @default(now())
+
+  ticketId    String
+  ticket      Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id])
+
+  attachments Attachment[]
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  filename    String
+  mimeType    String
+  size        Int
+  url         String
+  key         String
+
+  messageId   String
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Channel {
+  id          String      @id @default(cuid())
+  type        ChannelType
+  name        String
+  config      Json?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  tickets     Ticket[]
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String
+  color       String   @default("#6b7280")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  tickets     TicketTag[]
+  articles    ArticleTag[]
+}
+
+model TicketTag {
+  ticketId String
+  tagId    String
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([ticketId, tagId])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  icon        String?
+  order       Int      @default(0)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  articles    Article[]
+  parentCategoryId String?
+  parentCategory   Category?  @relation("CategoryTree", fields: [parentCategoryId], references: [id])
+  subCategories    Category[] @relation("CategoryTree")
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String
+  content     String   @db.Text
+  excerpt     String?
+  published   Boolean  @default(false)
+  order       Int      @default(0)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+
+  tags        ArticleTag[]
+}
+
+model ArticleTag {
+  articleId String
+  tagId     String
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+}
+
+model Webhook {
+  id          String   @id @default(cuid())
+  url         String
+  events      String[]
+  secret      String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  event        String
+  payload      Json
+  statusCode   Int?
+  response     String?  @db.Text
+  deliveredAt  DateTime?
+  attempts     Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  webhookId    String
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+}
