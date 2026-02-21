@@ -5,6 +5,8 @@ import { UsersModule } from './users/users.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { TeamsModule } from './teams/teams.module';
+import { EmailModule } from './email/email.module';
+import { FormsModule } from './forms/forms.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -16,6 +18,8 @@ import { PrismaModule } from './prisma/prisma.module';
     TicketsModule,
     OrganizationsModule,
     TeamsModule,
+    EmailModule,
+    FormsModule,
   ],
 })
 export class AppModule {}

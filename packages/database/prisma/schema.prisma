@@ -55,6 +55,7 @@ model Organization {
   articles    Article[]
   categories  Category[]
   webhooks    Webhook[]
+  forms       Form[]
   settings    OrganizationSettings?
 }
 
@@ -126,6 +127,7 @@ model Ticket {
 
   messages      Message[]
   tags          TicketTag[]
+  formSubmissions FormSubmission[]
 }
 
 model Message {
@@ -279,4 +281,32 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   revokedAt DateTime?
+}
+
+model Form {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  fields      Json
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  submissions FormSubmission[]
+}
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  data      Json
+  createdAt DateTime @default(now())
+
+  formId String
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  ticketId String?
+  ticket   Ticket? @relation(fields: [ticketId], references: [id])
 }

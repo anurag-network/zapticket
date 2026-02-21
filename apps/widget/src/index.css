@@ -1,3 +1,336 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.zt-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.zt-toggle-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.zt-toggle-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+}
+
+.zt-icon {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+.zt-icon-sm {
+  width: 16px;
+  height: 16px;
+}
+
+.zt-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ef4444;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zt-chat-window {
+  width: 380px;
+  height: 520px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: zt-slide-up 0.3s ease;
+}
+
+@keyframes zt-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.zt-header {
+  padding: 16px 20px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.zt-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.zt-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.zt-subtitle {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.zt-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.zt-close-btn,
+.zt-clear-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.zt-close-btn:hover,
+.zt-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.zt-close-btn svg,
+.zt-clear-btn svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.zt-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.zt-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+.zt-form-container {
+  padding: 20px;
+}
+
+.zt-welcome-text {
+  text-align: center;
+  color: #374151;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.zt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.zt-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.zt-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.zt-start-btn {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.zt-start-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.zt-msg {
+  margin-bottom: 12px;
+  max-width: 85%;
+  animation: zt-fade-in 0.2s ease;
+}
+
+@keyframes zt-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.zt-user-msg {
+  margin-left: auto;
+  background: #3b82f6;
+  color: white;
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 14px;
+}
+
+.zt-agent-msg {
+  background: white;
+  border-radius: 16px 16px 16px 4px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.zt-msg-content {
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.zt-msg-time {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.zt-user-msg .zt-msg-time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.zt-typing {
+  display: flex;
+  gap: 4px;
+  padding: 12px;
+  background: white;
+  border-radius: 16px;
+  width: fit-content;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.zt-typing-dot {
+  width: 8px;
+  height: 8px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: zt-bounce 1.4s infinite ease-in-out both;
+}
+
+.zt-typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.zt-typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes zt-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+.zt-input-area {
+  padding: 12px 16px;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.zt-msg-input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.zt-send-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.zt-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.zt-send-btn svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+@media (max-width: 480px) {
+  .zt-chat-window {
+    width: 100%;
+    height: 100%;
+    bottom: 0;
+    right: 0;
+    border-radius: 0;
+    position: fixed;
+  }
+  
+  .zt-widget {
+    bottom: 0;
+    right: 0;
+  }
+  
+  .zt-toggle-btn {
+    margin: 20px;
+  }
+}
