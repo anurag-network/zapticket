@@ -30,6 +30,9 @@ import { CSATModule } from './csat/csat.module';
 import { AgentAvailabilityModule } from './agent-availability/agent-availability.module';
 import { NotificationModule } from './notifications/notification.module';
 import { SLAModule } from './sla/sla.module';
+import { MentionsModule } from './mentions/mentions.module';
+import { FollowUpsModule } from './follow-ups/follow-ups.module';
+import { TicketViewsModule } from './ticket-views/ticket-views.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -66,6 +69,9 @@ import { PrismaModule } from './prisma/prisma.module';
     CSATModule,
     AgentAvailabilityModule,
     SLAModule,
+    MentionsModule,
+    FollowUpsModule,
+    TicketViewsModule,
   ],
 })
 export class AppModule {}

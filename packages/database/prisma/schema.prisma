@@ -121,6 +121,7 @@ model Organization {
   agentAvailabilities AgentAvailability[]
   notifications Notification[]
   slaPolicies   SLAPolicy[]
+  ticketViews   TicketView[]
   settings       OrganizationSettings?
 }
 
@@ -179,6 +180,11 @@ model User {
   availability    AgentAvailability?
   availabilityHistory AgentAvailabilityHistory[]
   notifications   Notification[]
+  mentions        Mention[]  @relation("MentionedUser")
+  mentionedBy     Mention[]  @relation("MentionedBy")
+  ticketFollowUps TicketFollowUp[]
+  ticketSnoozes   TicketSnooze[]
+  ticketViews     TicketView[]
 }
 
 model Ticket {
@@ -235,6 +241,9 @@ model Ticket {
   customerInteractions CustomerInteraction[]
   primaryTicketMerges TicketMerge[] @relation("PrimaryMerge")
   mergedTicketRecords TicketMerge[] @relation("MergedInto")
+  mentions       Mention[]
+  followUps      TicketFollowUp[]
+  snoozes        TicketSnooze[]
 }
 
 model Message {
@@ -251,6 +260,7 @@ model Message {
 
   attachments Attachment[]
   sentiment   SentimentScore?
+  mentions    Mention[]
 }
 
 model Attachment {
@@ -968,4 +978,96 @@ model SLABreach {
 
   @@index([ticketId])
   @@index([breachedAt])
+}
+
+model Mention {
+  id          String   @id @default(cuid())
+  mentionedUserId String
+  mentionedUser   User    @relation("MentionedUser", fields: [mentionedUserId], references: [id])
+  mentionedById   String
+  mentionedBy     User    @relation("MentionedBy", fields: [mentionedById], references: [id])
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  messageId   String
+  message     Message  @relation(fields: [messageId], references: [id])
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([mentionedUserId, read])
+  @@index([ticketId])
+}
+
+model TicketFollowUp {
+  id          String   @id @default(cuid())
+  type        String
+  remindAt    DateTime
+  completedAt DateTime?
+  note        String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@index([remindAt])
+  @@index([ticketId])
+}
+
+model TicketSnooze {
+  id          String   @id @default(cuid())
+  snoozedUntil DateTime
+  reason      String?
+  snoozedAt   DateTime @default(now())
+  unsnoozedAt DateTime?
+
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+
+  snoozedById String
+  snoozedBy   User     @relation(fields: [snoozedById], references: [id])
+
+  @@index([snoozedUntil])
+}
+
+model TicketView {
+  id          String   @id @default(cuid())
+  name        String
+  icon        String?
+  color       String?
+  filters     Json
+  sortBy      String?
+  sortOrder   String   @default("desc")
+  isDefault   Boolean  @default(false)
+  isShared    Boolean  @default(false)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  columns     TicketViewColumn[]
+
+  @@index([organizationId])
+  @@index([createdById])
+}
+
+model TicketViewColumn {
+  id          String   @id @default(cuid())
+  field       String
+  label       String?
+  visible     Boolean  @default(true)
+  width       Int?
+  position    Int      @default(0)
+
+  viewId      String
+  view        TicketView @relation(fields: [viewId], references: [id], onDelete: Cascade)
+
+  @@index([viewId])
 }
