@@ -33,6 +33,7 @@ import { SLAModule } from './sla/sla.module';
 import { MentionsModule } from './mentions/mentions.module';
 import { FollowUpsModule } from './follow-ups/follow-ups.module';
 import { TicketViewsModule } from './ticket-views/ticket-views.module';
+import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -72,6 +73,7 @@ import { PrismaModule } from './prisma/prisma.module';
     MentionsModule,
     FollowUpsModule,
     TicketViewsModule,
+    CustomFieldsModule,
   ],
 })
 export class AppModule {}

@@ -122,6 +122,7 @@ model Organization {
   notifications Notification[]
   slaPolicies   SLAPolicy[]
   ticketViews   TicketView[]
+  customFields  CustomField[]
   settings       OrganizationSettings?
 }
 
@@ -244,6 +245,7 @@ model Ticket {
   mentions       Mention[]
   followUps      TicketFollowUp[]
   snoozes        TicketSnooze[]
+  customFieldValues CustomFieldValue[]
 }
 
 model Message {
@@ -1070,4 +1072,64 @@ model TicketViewColumn {
   view        TicketView @relation(fields: [viewId], references: [id], onDelete: Cascade)
 
   @@index([viewId])
+}
+
+enum CustomFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  EMAIL
+  PHONE
+  URL
+  DATE
+  DATETIME
+  SELECT
+  MULTI_SELECT
+  CHECKBOX
+  RADIO
+  USER
+  TEAM
+}
+
+model CustomField {
+  id          String           @id @default(cuid())
+  name        String
+  key         String
+  type        CustomFieldType
+  required    Boolean          @default(false)
+  description String?
+  placeholder String?
+  defaultValue String?
+  options     Json?
+  validation  Json?
+  position    Int              @default(0)
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  values      CustomFieldValue[]
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@index([organizationId, active])
+}
+
+model CustomFieldValue {
+  id        String   @id @default(cuid())
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fieldId   String
+  field     CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  ticketId  String
+  ticket    Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldId, ticketId])
+  @@index([fieldId])
+  @@index([ticketId])
 }
