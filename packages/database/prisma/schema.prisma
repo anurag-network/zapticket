@@ -123,6 +123,7 @@ model Organization {
   slaPolicies   SLAPolicy[]
   ticketViews   TicketView[]
   customFields  CustomField[]
+  dataImports   DataImport[]
   settings       OrganizationSettings?
 }
 
@@ -186,6 +187,7 @@ model User {
   ticketFollowUps TicketFollowUp[]
   ticketSnoozes   TicketSnooze[]
   ticketViews     TicketView[]
+  dataImports     DataImport[]
 }
 
 model Ticket {
@@ -1132,4 +1134,48 @@ model CustomFieldValue {
   @@unique([fieldId, ticketId])
   @@index([fieldId])
   @@index([ticketId])
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ImportSource {
+  ZENDESK
+  ZAMMAD
+  FRESHDESK
+  HELPSCOUT
+  CSV
+  JSON
+}
+
+model DataImport {
+  id            String       @id @default(cuid())
+  source        ImportSource
+  status        ImportStatus @default(PENDING)
+  fileName      String
+  fileSize      Int
+  totalRecords  Int          @default(0)
+  processedRecords Int       @default(0)
+  failedRecords Int          @default(0)
+  errorLog      String?      @db.Text
+  fieldMapping  Json?
+  options       Json?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById   String
+  createdBy     User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
 }

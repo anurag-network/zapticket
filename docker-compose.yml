@@ -3,17 +3,18 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: zapticket-db
+    container_name: zapticket-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-zapticket}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-zapticket}
-      POSTGRES_DB: ${DB_NAME:-zapticket}
+      POSTGRES_USER: zapticket
+      POSTGRES_PASSWORD: zapticket_secret
+      POSTGRES_DB: zapticket
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-zapticket}"]
+      test: ["CMD-SHELL", "pg_isready -U zapticket"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,6 +22,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: zapticket-redis
+    restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -34,27 +36,29 @@ services:
 
   meilisearch:
     image: getmeili/meilisearch:v1.5
-    container_name: zapticket-search
+    container_name: zapticket-meilisearch
+    restart: unless-stopped
     environment:
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-zapticket-master-key}
-      MEILI_ENV: development
+      MEILI_MASTER_KEY: zapticket_master_key
+      MEILI_ENV: production
     volumes:
       - meilisearch_data:/meili_data
     ports:
       - "7700:7700"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:7700/health"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   minio:
     image: minio/minio:latest
-    container_name: zapticket-storage
+    container_name: zapticket-minio
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-zapticket}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-zapticket123}
+      MINIO_ROOT_USER: zapticket
+      MINIO_ROOT_PASSWORD: zapticket_secret
     volumes:
       - minio_data:/data
     ports:
@@ -62,19 +66,78 @@ services:
       - "9001:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: zapticket-mail
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: zapticket-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://zapticket:zapticket_secret@postgres:5432/zapticket
+      REDIS_URL: redis://redis:6379
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: zapticket_master_key
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_EXPIRES_IN: 7d
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: zapticket
+      MINIO_SECRET_KEY: zapticket_secret
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET: zapticket
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        node apps/api/dist/main.js
+      "
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: zapticket-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://api:3001
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
   redis_data:
   meilisearch_data:
   minio_data:
+
+networks:
+  default:
+    name: zapticket-network
