@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent, Avatar, AvatarFallback } from '@zapticket/ui';
+import { FollowUps } from '@/components/follow-ups/FollowUps';
 
 interface Message {
   id: string;
@@ -304,6 +305,8 @@ export default function TicketDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <FollowUps ticketId={ticketId} />
           </div>
         </div>
       </main>
