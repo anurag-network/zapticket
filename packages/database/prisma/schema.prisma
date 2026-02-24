@@ -124,6 +124,8 @@ model Organization {
   ticketViews   TicketView[]
   customFields  CustomField[]
   dataImports   DataImport[]
+  chatSessions  ChatSession[]
+  timeEntries   TimeEntry[]
   settings       OrganizationSettings?
 }
 
@@ -188,6 +190,8 @@ model User {
   ticketSnoozes   TicketSnooze[]
   ticketViews     TicketView[]
   dataImports     DataImport[]
+  chatSessions    ChatSession[]
+  timeEntries     TimeEntry[]
 }
 
 model Ticket {
@@ -248,6 +252,8 @@ model Ticket {
   followUps      TicketFollowUp[]
   snoozes        TicketSnooze[]
   customFieldValues CustomFieldValue[]
+  chatSessions   ChatSession[]
+  timeEntries    TimeEntry[]
 }
 
 model Message {
@@ -1178,4 +1184,85 @@ model DataImport {
 
   @@index([organizationId])
   @@index([status])
+}
+
+enum ChatSessionStatus {
+  QUEUED
+  ACTIVE
+  WAITING
+  ENDED
+  MISSED
+}
+
+model ChatSession {
+  id          String            @id @default(cuid())
+  status      ChatSessionStatus @default(QUEUED)
+  visitorName String?
+  visitorEmail String?
+  visitorIp   String?
+  visitorUserAgent String?
+  pageUrl     String?
+  pageTitle   String?
+  startedAt   DateTime          @default(now())
+  endedAt     DateTime?
+  waitTime    Int?
+  duration    Int?
+  rating      Int?
+  feedback    String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  agentId     String?
+  agent       User?        @relation(fields: [agentId], references: [id])
+
+  ticketId    String?
+  ticket      Ticket?      @relation(fields: [ticketId], references: [id])
+
+  messages    LiveChatMessage[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([agentId])
+}
+
+model LiveChatMessage {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  senderType  String
+  senderName  String?
+  createdAt   DateTime @default(now())
+
+  sessionId   String
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  description String?   @db.Text
+  billable    Boolean   @default(true)
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  ticketId    String
+  ticket      Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([ticketId])
+  @@index([userId])
+  @@index([startTime])
 }

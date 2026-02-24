@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ZapTicket Live Chat Widget</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    }
+    
+    .zapticket-widget {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+    
+    .zapticket-button {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .zapticket-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+    
+    .zapticket-button svg {
+      width: 28px;
+      height: 28px;
+      fill: white;
+    }
+    
+    .zapticket-chat {
+      position: absolute;
+      bottom: 70px;
+      right: 0;
+      width: 380px;
+      height: 520px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.3s ease;
+    }
+    
+    .zapticket-chat.open {
+      display: flex;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .zapticket-header {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .zapticket-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .zapticket-header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .zapticket-close {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    
+    .zapticket-close:hover {
+      opacity: 1;
+    }
+    
+    .zapticket-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .zapticket-message {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .zapticket-message.visitor {
+      align-self: flex-end;
+      background: #3b82f6;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .zapticket-message.agent {
+      align-self: flex-start;
+      background: #f1f5f9;
+      color: #1e293b;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .zapticket-message .time {
+      font-size: 10px;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+    
+    .zapticket-form {
+      padding: 16px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .zapticket-input-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .zapticket-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .zapticket-input:focus {
+      border-color: #3b82f6;
+    }
+    
+    .zapticket-send {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    
+    .zapticket-send:hover {
+      background: #2563eb;
+    }
+    
+    .zapticket-send svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+    
+    .zapticket-prechat {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .zapticket-prechat h4 {
+      font-size: 16px;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    
+    .zapticket-prechat p {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    
+    .zapticket-prechat input {
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .zapticket-prechat input:focus {
+      border-color: #3b82f6;
+    }
+    
+    .zapticket-prechat button {
+      padding: 12px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .zapticket-prechat button:hover {
+      background: #2563eb;
+    }
+    
+    .zapticket-typing {
+      font-size: 12px;
+      color: #64748b;
+      padding: 8px 0;
+    }
+    
+    .zapticket-offline {
+      text-align: center;
+      padding: 40px 20px;
+      color: #64748b;
+    }
+    
+    .zapticket-offline svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+    
+    .zapticket-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      background: #ef4444;
+      border-radius: 50%;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="zapticket-widget">
+    <div class="zapticket-chat" id="zapticket-chat">
+      <div class="zapticket-header">
+        <div>
+          <h3>Chat with us</h3>
+          <p>We typically reply within minutes</p>
+        </div>
+        <button class="zapticket-close" onclick="toggleChat()">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div id="zapticket-content">
+        <!-- Pre-chat form -->
+        <div class="zapticket-prechat" id="zapticket-prechat">
+          <h4>Welcome!</h4>
+          <p>Please provide your details to start chatting</p>
+          <input type="text" id="visitor-name" placeholder="Your name">
+          <input type="email" id="visitor-email" placeholder="Email (optional)">
+          <button onclick="startChat()">Start Chat</button>
+        </div>
+        
+        <!-- Chat messages -->
+        <div class="zapticket-messages" id="zapticket-messages" style="display: none;"></div>
+      </div>
+      
+      <!-- Chat input -->
+      <div class="zapticket-form" id="zapticket-form" style="display: none;">
+        <div class="zapticket-input-group">
+          <input type="text" class="zapticket-input" id="message-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+          <button class="zapticket-send" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <button class="zapticket-button" onclick="toggleChat()">
+      <svg viewBox="0 0 24 24">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+      </svg>
+      <span class="zapticket-badge" id="unread-badge" style="display: none;">0</span>
+    </button>
+  </div>
+
+  <script>
+    // Configuration - these should be set when embedding
+    const CONFIG = {
+      organizationId: 'YOUR_ORG_ID',
+      apiUrl: 'http://localhost:3001',
+      primaryColor: '#3b82f6',
+    };
+    
+    let sessionId = null;
+    let lastMessageTime = null;
+    let unreadCount = 0;
+    let chatOpen = false;
+    let pollInterval = null;
+    
+    function toggleChat() {
+      const chat = document.getElementById('zapticket-chat');
+      chatOpen = !chatOpen;
+      chat.classList.toggle('open', chatOpen);
+      
+      if (chatOpen) {
+        unreadCount = 0;
+        updateBadge();
+      }
+    }
+    
+    async function startChat() {
+      const name = document.getElementById('visitor-name').value.trim();
+      const email = document.getElementById('visitor-email').value.trim();
+      
+      if (!name) {
+        alert('Please enter your name');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${CONFIG.apiUrl}/public/live-chat/session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            organizationId: CONFIG.organizationId,
+            visitorName: name,
+            visitorEmail: email,
+            pageUrl: window.location.href,
+            pageTitle: document.title,
+          }),
+        });
+        
+        const data = await res.json();
+        sessionId = data.id;
+        
+        document.getElementById('zapticket-prechat').style.display = 'none';
+        document.getElementById('zapticket-messages').style.display = 'flex';
+        document.getElementById('zapticket-form').style.display = 'block';
+        
+        startPolling();
+      } catch (error) {
+        console.error('Failed to start chat:', error);
+        alert('Failed to start chat. Please try again.');
+      }
+    }
+    
+    async function sendMessage() {
+      const input = document.getElementById('message-input');
+      const content = input.value.trim();
+      
+      if (!content || !sessionId) return;
+      
+      try {
+        await fetch(`${CONFIG.apiUrl}/public/live-chat/session/${sessionId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        });
+        
+        input.value = '';
+        fetchMessages();
+      } catch (error) {
+        console.error('Failed to send message:', error);
+      }
+    }
+    
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+    
+    async function fetchMessages() {
+      if (!sessionId) return;
+      
+      try {
+        const url = lastMessageTime
+          ? `${CONFIG.apiUrl}/public/live-chat/session/${sessionId}/messages?after=${lastMessageTime}`
+          : `${CONFIG.apiUrl}/public/live-chat/session/${sessionId}/messages`;
+        
+        const res = await fetch(url);
+        const messages = await res.json();
+        
+        const container = document.getElementById('zapticket-messages');
+        
+        messages.forEach(msg => {
+          if (!document.getElementById(`msg-${msg.id}`)) {
+            const div = document.createElement('div');
+            div.id = `msg-${msg.id}`;
+            div.className = `zapticket-message ${msg.senderType}`;
+            div.innerHTML = `
+              ${escapeHtml(msg.content)}
+              <div class="time">${formatTime(msg.createdAt)}</div>
+            `;
+            container.appendChild(div);
+            
+            if (msg.senderType === 'agent' && !chatOpen) {
+              unreadCount++;
+              updateBadge();
+            }
+            
+            lastMessageTime = msg.createdAt;
+          }
+        });
+        
+        container.scrollTop = container.scrollHeight;
+      } catch (error) {
+        console.error('Failed to fetch messages:', error);
+      }
+    }
+    
+    function startPolling() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(fetchMessages, 2000);
+      fetchMessages();
+    }
+    
+    function updateBadge() {
+      const badge = document.getElementById('unread-badge');
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    
+    function formatTime(dateStr) {
+      return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

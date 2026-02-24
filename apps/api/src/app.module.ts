@@ -35,6 +35,8 @@ import { FollowUpsModule } from './follow-ups/follow-ups.module';
 import { TicketViewsModule } from './ticket-views/ticket-views.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 import { DataImportModule } from './data-import/data-import.module';
+import { LiveChatModule } from './live-chat/live-chat.module';
+import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -76,6 +78,8 @@ import { PrismaModule } from './prisma/prisma.module';
     TicketViewsModule,
     CustomFieldsModule,
     DataImportModule,
+    LiveChatModule,
+    TimeTrackingModule,
   ],
 })
 export class AppModule {}
