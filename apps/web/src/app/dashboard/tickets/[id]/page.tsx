@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent, Avatar, AvatarFallback } from '@zapticket/ui';
 import { FollowUps } from '@/components/follow-ups/FollowUps';
 import { TimeTracker } from '@/components/time-tracking/TimeTracker';
+import { TicketAI } from '@/components/ai/TicketAI';
 
 interface Message {
   id: string;
@@ -309,6 +310,7 @@ export default function TicketDetailPage() {
 
             <FollowUps ticketId={ticketId} />
             <TimeTracker ticketId={ticketId} />
+            <TicketAI ticketId={ticketId} />
           </div>
         </div>
       </main>

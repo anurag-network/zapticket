@@ -20,6 +20,7 @@ import {
   Settings,
   BarChart3,
   Layers,
+  User,
 } from 'lucide-react';
 
 interface Metrics {
@@ -158,6 +159,18 @@ export default function DashboardPage() {
               <Button variant="ghost" size="sm">
                 <MessageSquare className="h-4 w-4 mr-1" />
                 Tickets
+              </Button>
+            </Link>
+            <Link href="/dashboard/customers">
+              <Button variant="ghost" size="sm">
+                <User className="h-4 w-4 mr-1" />
+                Customers
+              </Button>
+            </Link>
+            <Link href="/dashboard/analytics">
+              <Button variant="ghost" size="sm">
+                <BarChart3 className="h-4 w-4 mr-1" />
+                Analytics
               </Button>
             </Link>
             <Link href="/dashboard/kb">
