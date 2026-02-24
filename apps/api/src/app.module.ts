@@ -37,6 +37,7 @@ import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 import { DataImportModule } from './data-import/data-import.module';
 import { LiveChatModule } from './live-chat/live-chat.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
+import { SSOModule } from './sso/sso.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -80,6 +81,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DataImportModule,
     LiveChatModule,
     TimeTrackingModule,
+    SSOModule,
   ],
 })
 export class AppModule {}

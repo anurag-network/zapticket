@@ -126,6 +126,8 @@ model Organization {
   dataImports   DataImport[]
   chatSessions  ChatSession[]
   timeEntries   TimeEntry[]
+  ssoConnections SSOConnection[]
+  ssoLogins     SSOLogin[]
   settings       OrganizationSettings?
 }
 
@@ -192,6 +194,7 @@ model User {
   dataImports     DataImport[]
   chatSessions    ChatSession[]
   timeEntries     TimeEntry[]
+  ssoLogins       SSOLogin[]
 }
 
 model Ticket {
@@ -1265,4 +1268,78 @@ model TimeEntry {
   @@index([ticketId])
   @@index([userId])
   @@index([startTime])
+}
+
+enum SSOProvider {
+  SAML
+  OIDC
+  OKTA
+  AZURE_AD
+  GOOGLE_WORKSPACE
+}
+
+model SSOConnection {
+  id            String       @id @default(cuid())
+  name          String
+  provider      SSOProvider
+  enabled       Boolean      @default(false)
+  domain        String
+  
+  // SAML Configuration
+  samlEntryPoint    String?
+  samlCertificate   String?  @db.Text
+  samlIssuer        String?
+  samlCallbackUrl   String?
+  
+  // OIDC Configuration
+  oidcClientId      String?
+  oidcClientSecret  String?
+  oidcDiscoveryUrl  String?
+  oidcCallbackUrl   String?
+  
+  // Attribute Mapping
+  emailAttribute    String    @default("email")
+  nameAttribute     String    @default("name")
+  
+  // Provisioning
+  autoProvision     Boolean   @default(true)
+  defaultRole       Role?     @default(MEMBER)
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  ssoLogins      SSOLogin[]
+
+  @@unique([organizationId, domain])
+  @@index([organizationId])
+  @@index([domain])
+}
+
+model SSOLogin {
+  id            String   @id @default(cuid())
+  ssoProvider   String
+  externalId    String
+  email         String
+  name          String?
+  success       Boolean
+  errorMessage  String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+
+  ssoConnectionId String?
+  ssoConnection   SSOConnection? @relation(fields: [ssoConnectionId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([createdAt])
 }

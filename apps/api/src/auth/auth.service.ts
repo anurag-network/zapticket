@@ -85,7 +85,21 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string) {
-    const accessToken = this.jwt.sign({ sub: userId });
+    return this.generateTokensWithPayload(userId);
+  }
+
+  async generateTokensWithPayload(userId: string, email?: string, role?: string, organizationId?: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const payload = {
+      sub: userId,
+      email: email || user.email,
+      role: role || user.role,
+      organizationId: organizationId || user.organizationId,
+    };
+
+    const accessToken = this.jwt.sign(payload);
     const refreshToken = this.jwt.sign({ sub: userId, type: 'refresh' }, { expiresIn: '30d' });
 
     await this.prisma.refreshToken.create({
