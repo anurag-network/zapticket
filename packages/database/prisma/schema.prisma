@@ -135,6 +135,13 @@ model Organization {
   ssoLogins     SSOLogin[]
   leadCaptures  LeadCapture[]
   settings       OrganizationSettings?
+  
+  // Community Forums
+  forumCategories ForumCategory[]
+  forumThreads   ForumThread[]
+  
+  // Status Page
+  statusPage     StatusPage?
 }
 
 model OrganizationSettings {
@@ -202,6 +209,11 @@ model User {
   timeEntries     TimeEntry[]
   ssoLogins       SSOLogin[]
   agentHandoffs   AgentHandoff[]
+  
+  // Community Forums
+  forumThreads    ForumThread[]
+  forumPosts      ForumPost[]
+  forumVotes      ForumVote[]
 }
 
 model Ticket {
@@ -1471,4 +1483,184 @@ model AgentHandoff {
 
   @@index([conversationId])
   @@index([status])
+}
+
+// ============ Community Forums ============
+
+model ForumCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  order       Int      @default(0)
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  threads     ForumThread[]
+
+  @@unique([slug, organizationId])
+  @@index([organizationId])
+}
+
+model ForumThread {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  isPinned    Boolean  @default(false)
+  isLocked    Boolean  @default(false)
+  isSolved    Boolean  @default(false)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+
+  categoryId  String
+  category    ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  posts       ForumPost[]
+  votes       ForumVote[]
+
+  @@unique([slug, organizationId])
+  @@index([categoryId])
+  @@index([authorId])
+}
+
+model ForumPost {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  isAnswer    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+
+  threadId    String
+  thread      ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  votes       ForumVote[]
+
+  @@index([threadId])
+  @@index([authorId])
+}
+
+model ForumVote {
+  id          String   @id @default(cuid())
+  value       Int      @default(0) // 1 = upvote, -1 = downvote
+  createdAt   DateTime @default(now())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  postId      String?
+  post        ForumPost? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  threadId    String?
+  thread      ForumThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, threadId])
+}
+
+// ============ Status Page ============
+
+model StatusPage {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  logoUrl     String?
+  primaryColor String  @default("#3b82f6")
+  domain      String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String   @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  components  StatusComponent[]
+  incidents   StatusIncident[]
+  subscribers StatusSubscriber[]
+
+  @@index([slug])
+}
+
+model StatusComponent {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  order       Int      @default(0)
+  status      String   @default("operational") // operational, degraded, partial_outage, major_outage
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  updates     StatusUpdate[]
+
+  @@index([statusPageId])
+}
+
+model StatusIncident {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("investigating") // investigating, identified, monitoring, resolved
+  severity    String   @default("minor") // critical, major, minor
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  updatedAt   DateTime @updatedAt
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  updates     StatusUpdate[]
+
+  @@index([statusPageId])
+  @@index([status])
+}
+
+model StatusUpdate {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  status      String
+  createdAt   DateTime @default(now())
+
+  incidentId  String
+  incident    StatusIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  componentId String?
+  component   StatusComponent? @relation(fields: [componentId], references: [id])
+
+  @@index([incidentId])
+}
+
+model StatusSubscriber {
+  id          String   @id @default(cuid())
+  email       String
+  phone       String?
+  verified    Boolean  @default(false)
+  verifyToken String?
+  createdAt   DateTime @default(now())
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  @@unique([email, statusPageId])
+  @@index([statusPageId])
 }

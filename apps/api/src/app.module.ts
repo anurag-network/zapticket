@@ -44,6 +44,8 @@ import { CustomersModule } from './customers/customers.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { ChannelsModule } from './channels/channels.module';
+import { ForumModule } from './forum/forum.module';
+import { StatusPageModule } from './status-page/status-page.module';
 
 @Module({
   imports: [
@@ -92,6 +94,8 @@ import { ChannelsModule } from './channels/channels.module';
     DashboardModule,
     WebsocketModule,
     ChannelsModule,
+    ForumModule,
+    StatusPageModule,
   ],
 })
 export class AppModule {}
