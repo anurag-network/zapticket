@@ -46,6 +46,8 @@ import { WebsocketModule } from './websocket/websocket.module';
 import { ChannelsModule } from './channels/channels.module';
 import { ForumModule } from './forum/forum.module';
 import { StatusPageModule } from './status-page/status-page.module';
+import { AuditModule } from './audit/audit.module';
+import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
   imports: [
@@ -96,6 +98,8 @@ import { StatusPageModule } from './status-page/status-page.module';
     ChannelsModule,
     ForumModule,
     StatusPageModule,
+    AuditModule,
+    PermissionsModule,
   ],
 })
 export class AppModule {}
