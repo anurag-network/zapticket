@@ -43,6 +43,7 @@ import { AIModule } from './ai/ai.module';
 import { CustomersModule } from './customers/customers.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { WebsocketModule } from './websocket/websocket.module';
+import { ChannelsModule } from './channels/channels.module';
 
 @Module({
   imports: [
@@ -90,6 +91,7 @@ import { WebsocketModule } from './websocket/websocket.module';
     CustomersModule,
     DashboardModule,
     WebsocketModule,
+    ChannelsModule,
   ],
 })
 export class AppModule {}

@@ -74,6 +74,11 @@ enum ChannelType {
   DISCORD
   PHONE
   SOCIAL
+  SMS
+  WHATSAPP
+  FACEBOOK
+  TWITTER
+  TELEGRAM
 }
 
 enum AIProvider {
