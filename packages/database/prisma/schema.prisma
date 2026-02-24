@@ -128,6 +128,7 @@ model Organization {
   timeEntries   TimeEntry[]
   ssoConnections SSOConnection[]
   ssoLogins     SSOLogin[]
+  leadCaptures  LeadCapture[]
   settings       OrganizationSettings?
 }
 
@@ -195,6 +196,7 @@ model User {
   chatSessions    ChatSession[]
   timeEntries     TimeEntry[]
   ssoLogins       SSOLogin[]
+  agentHandoffs   AgentHandoff[]
 }
 
 model Ticket {
@@ -541,25 +543,7 @@ model AgentWorkload {
   @@index([organizationId, openTickets])
 }
 
-model ChatbotConfig {
-  id              String     @id @default(cuid())
-  name            String     @default("Zapdeck")
-  welcomeMessage  String     @default("Hi! I'm Zapdeck, your support assistant. How can I help you today?")
-  aiProvider      AIProvider @default(OPENAI)
-  apiKey          String?
-  apiEndpoint     String?
-  model           String     @default("gpt-4")
-  temperature     Float      @default(0.7)
-  maxTokens       Int        @default(500)
-  active          Boolean    @default(true)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
 
-  organizationId  String     @unique
-  organization    Organization @relation(fields: [organizationId], references: [id])
-
-  conversations   ChatConversation[]
-}
 
 model ChatConversation {
   id              String        @id @default(cuid())
@@ -570,8 +554,17 @@ model ChatConversation {
 
   visitorName     String?
   visitorEmail    String?
+  visitorPhone    String?
   category        String?
-  description     String?
+  description     String?       @db.Text
+  detectedLanguage String?
+  
+  // Handoff
+  handoffRequested Boolean      @default(false)
+  handoffReason   String?
+  
+  // Lead
+  isLead          Boolean       @default(false)
   
   ticketId        String?
   ticket          Ticket?       @relation(fields: [ticketId], references: [id])
@@ -583,15 +576,22 @@ model ChatConversation {
   organization    Organization  @relation(fields: [organizationId], references: [id])
 
   messages        ChatMessage[]
+  leadCapture     LeadCapture?
+  handoff         AgentHandoff?
 
   @@index([sessionId])
   @@index([organizationId, createdAt])
+  @@index([handoffRequested])
 }
 
 model ChatMessage {
   id             String   @id @default(cuid())
   content        String   @db.Text
   isBot          Boolean  @default(false)
+  language       String?
+  sentiment      String?
+  intent         String?
+  confidence     Float?
   createdAt      DateTime @default(now())
 
   conversationId String
@@ -1342,4 +1342,128 @@ model SSOLogin {
   @@index([organizationId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model ChatbotConfig {
+  id              String   @id @default(cuid())
+  botName         String   @default("Zapdeck")
+  welcomeMessage  String    @default("Hi! I'm Zapdeck, your support assistant. How can I help you today?")
+  offlineMessage  String    @default("Sorry, we're currently offline. Please leave a message and we'll get back to you soon.")
+  
+  // AI Configuration
+  aiProvider      AIProvider @default(OPENAI)
+  aiModel         String?
+  aiApiKey        String?
+  
+  // Features
+  enabled         Boolean   @default(true)
+  handoffEnabled  Boolean   @default(true)
+  proactiveChat   Boolean   @default(true)
+  multilingual    Boolean   @default(true)
+  
+  // KB Integration
+  kbEnabled       Boolean   @default(true)
+  kbConfidenceThreshold Float @default(0.7)
+  
+  // Lead Capture
+  leadCaptureEnabled Boolean @default(true)
+  leadFields      Json?
+  
+  // Proactive Engagement
+  proactiveDelay      Int     @default(5000)
+  proactiveTriggers   Json?
+  proactiveMessage    String?
+  
+  // Appearance
+  primaryColor    String    @default("#3b82f6")
+  position        String    @default("bottom-right")
+  avatarUrl       String?
+  
+  // Language
+  defaultLanguage String    @default("en")
+  supportedLanguages String? @default("en,es,fr,de,pt,it,nl")
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organizationId  String    @unique
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  conversations   ChatConversation[]
+  trainingData    ChatbotTraining[]
+  leadCaptures    LeadCapture[]
+  handoffs        AgentHandoff[]
+
+  @@index([organizationId])
+}
+
+model ChatbotTraining {
+  id          String   @id @default(cuid())
+  type        String
+  question    String   @db.Text
+  answer      String   @db.Text
+  keywords    String[]
+  priority    Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  configId    String
+  config      ChatbotConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  articleId   String?
+
+  @@index([configId])
+  @@index([type])
+}
+
+model LeadCapture {
+  id          String   @id @default(cuid())
+  name        String?
+  email       String
+  phone       String?
+  company     String?
+  message     String?  @db.Text
+  source      String?
+  pageUrl     String?
+  data        Json?
+  contacted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  configId    String
+  config      ChatbotConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  conversationId String?  @unique
+  conversation   ChatConversation? @relation(fields: [conversationId], references: [id])
+
+  @@index([organizationId])
+  @@index([createdAt])
+  @@index([contacted])
+}
+
+model AgentHandoff {
+  id          String   @id @default(cuid())
+  reason      String?
+  status      String   @default("pending")
+  assignedToId String?
+  createdAt   DateTime @default(now())
+  acceptedAt  DateTime?
+  endedAt     DateTime?
+  notes       String?  @db.Text
+  rating      Int?
+  feedback    String?
+
+  conversationId String   @unique
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id])
+
+  configId    String
+  config      ChatbotConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  assignedTo  User?    @relation(fields: [assignedToId], references: [id])
+
+  @@index([conversationId])
+  @@index([status])
 }
