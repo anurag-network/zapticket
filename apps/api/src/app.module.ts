@@ -39,6 +39,10 @@ import { LiveChatModule } from './live-chat/live-chat.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 import { SSOModule } from './sso/sso.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AIModule } from './ai/ai.module';
+import { CustomersModule } from './customers/customers.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { WebsocketModule } from './websocket/websocket.module';
 
 @Module({
   imports: [
@@ -82,6 +86,10 @@ import { PrismaModule } from './prisma/prisma.module';
     LiveChatModule,
     TimeTrackingModule,
     SSOModule,
+    AIModule,
+    CustomersModule,
+    DashboardModule,
+    WebsocketModule,
   ],
 })
 export class AppModule {}
