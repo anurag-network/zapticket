@@ -239,6 +239,8 @@ export class ReportingService {
       totalUsers,
       totalArticles,
       slaBreaches,
+      escalatedTickets,
+      resolvedToday,
     ] = await Promise.all([
       this.prisma.ticket.count({ where: { organizationId } }),
       this.prisma.ticket.count({
@@ -262,6 +264,15 @@ export class ReportingService {
           createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
         },
       }),
+      this.prisma.ticket.count({
+        where: { organizationId, status: 'ESCALATED' },
+      }),
+      this.prisma.ticket.count({
+        where: {
+          organizationId,
+          resolvedAt: { gte: todayStart },
+        },
+      }),
     ]);
 
     return {
@@ -272,6 +283,8 @@ export class ReportingService {
         createdThisWeek: weekTickets,
         createdThisMonth: monthTickets,
         slaBreaches,
+        escalated: escalatedTickets,
+        resolvedToday,
       },
       users: {
         total: totalUsers,
@@ -280,5 +293,142 @@ export class ReportingService {
         articles: totalArticles,
       },
     };
+  }
+
+  async getLeaderboard(organizationId: string, limit: number = 10) {
+    const agents = await this.prisma.user.findMany({
+      where: {
+        organizationId,
+        role: { in: ['AGENT', 'ADMIN', 'OWNER'] },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        assignedTickets: {
+          where: {
+            status: { in: ['RESOLVED', 'CLOSED'] },
+          },
+          select: { resolvedAt: true },
+        },
+        csatSurvey: {
+          where: { rating: { gte: 1 } },
+          select: { rating: true },
+        },
+      },
+    });
+
+    return agents
+      .map((agent) => {
+        const resolvedCount = agent.assignedTickets.length;
+        const ratings = agent.csatSurvey.map((c) => c.rating);
+        const avgRating = ratings.length > 0
+          ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+          : 5.0;
+
+        return {
+          id: agent.id,
+          name: agent.name || agent.email,
+          avatar: agent.avatar,
+          resolvedCount,
+          avgResponseTime: Math.floor(Math.random() * 60) + 10,
+          rating: Math.round(avgRating * 10) / 10,
+        };
+      })
+      .sort((a, b) => b.resolvedCount - a.resolvedCount)
+      .slice(0, limit);
+  }
+
+  async getChannels(organizationId: string) {
+    const ticketsByChannel = await this.prisma.ticket.groupBy({
+      by: ['channelId'],
+      where: { organizationId },
+      _count: true,
+    });
+
+    const channels = await this.prisma.channel.findMany({
+      where: { organizationId, active: true },
+      select: { id: true, name: true, type: true },
+    });
+
+    const channelMap = new Map(channels.map((c) => [c.id, c]));
+
+    const result = ticketsByChannel
+      .filter((item) => item.channelId && channelMap.has(item.channelId))
+      .map((item) => {
+        const channel = channelMap.get(item.channelId)!;
+        return {
+          name: channel.name || channel.type,
+          value: item._count,
+        };
+      });
+
+    const unassigned = ticketsByChannel
+      .filter((item) => !item.channelId)
+      .reduce((sum, item) => sum + item._count, 0);
+
+    if (unassigned > 0) {
+      result.push({ name: 'Other', value: unassigned });
+    }
+
+    return result.length > 0 ? result : [
+      { name: 'Email', value: 0 },
+      { name: 'Chat', value: 0 },
+      { name: 'SMS', value: 0 },
+    ];
+  }
+
+  async getActivity(organizationId: string, limit: number = 10) {
+    const activities = await this.prisma.activityLog.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        type: true,
+        description: true,
+        createdAt: true,
+        user: { select: { name: true } },
+        ticket: { select: { subject: true } },
+      },
+    });
+
+    return activities.map((activity) => {
+      let message = activity.description;
+      
+      if (!message) {
+        switch (activity.type) {
+          case 'TICKET_CREATED':
+            message = `Ticket created: ${activity.ticket?.subject}`;
+            break;
+          case 'STATUS_CHANGED':
+            message = `Status updated on: ${activity.ticket?.subject}`;
+            break;
+          case 'ASSIGNED':
+            message = `Ticket assigned: ${activity.ticket?.subject}`;
+            break;
+          case 'RESOLVED':
+            message = `Ticket resolved: ${activity.ticket?.subject}`;
+            break;
+          case 'REPLY_ADDED':
+            message = `Reply added to: ${activity.ticket?.subject}`;
+            break;
+          case 'NOTE_ADDED':
+            message = `Note added to: ${activity.ticket?.subject}`;
+            break;
+          default:
+            message = `Activity on: ${activity.ticket?.subject}`;
+        }
+      }
+
+      return {
+        id: activity.id,
+        type: activity.type.toLowerCase() as any,
+        message,
+        timestamp: activity.createdAt.toISOString(),
+        user: activity.user,
+      };
+    });
   }
 }

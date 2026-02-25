@@ -79,12 +79,34 @@ export class TicketsController {
     return this.messages.findByTicket(id);
   }
 
-  @Post(':id/messages')
+@Post(':id/messages')
   @Roles('OWNER', 'ADMIN', 'AGENT', 'MEMBER')
   @ApiOperation({ summary: 'Add a reply or internal note to a ticket' })
   @ApiResponse({ status: 201, description: 'Message added', type: MessageResponseDto })
   @ApiResponse({ status: 404, description: 'Ticket not found' })
-  addMessage(@Param('id') id: string, @Req() req: any, @Body() data: MessageInput) {
+  addMessage(@Param('id') id: string, @Req() req: any, @Body() data: TicketInput) {
     return this.messages.create(id, req.user.id, data);
   }
+
+  @Post(':id/merge')
+  @Roles('OWNER', 'ADMIN', 'AGENT')
+  @ApiOperation({ summary: 'Merge another ticket into this ticket' })
+  @ApiResponse({ status: 200, description: 'Tickets merged successfully' })
+  merge(@Param('id') id: string, @Body('ticketId') mergeTicketId: string, @Req() req: any) {
+    return this.tickets.merge(id, mergeTicketId, req.user.id);
+  }
+
+  @Post('bulk-update')
+  @Roles('OWNER', 'ADMIN', 'AGENT')
+  @ApiOperation({ summary: 'Bulk update multiple tickets' })
+  @ApiResponse({ status: 200, description: 'Tickets updated successfully' })
+  bulkUpdate(@Body() body: { ticketIds: string[]; status?: string; priority?: string; assigneeId?: string }, @Req() req: any) {
+    return this.tickets.bulkUpdate(
+      body.ticketIds,
+      { status: body.status, priority: body.priority, assigneeId: body.assigneeId },
+      req.user.id,
+      req.user.organizationId
+    );
+  }
+}
 }

@@ -64,4 +64,31 @@ export class ReportingController {
   getCategoryBreakdown(@Req() req: any) {
     return this.reporting.getCategoryBreakdown(req.user.organizationId);
   }
+
+  @Get('leaderboard')
+  @Roles('OWNER', 'ADMIN', 'AGENT')
+  @ApiOperation({ summary: 'Get agent leaderboard' })
+  getLeaderboard(@Req() req: any, @Query('limit') limit?: string) {
+    return this.reporting.getLeaderboard(
+      req.user.organizationId,
+      limit ? parseInt(limit) : 10
+    );
+  }
+
+  @Get('channels')
+  @Roles('OWNER', 'ADMIN', 'AGENT')
+  @ApiOperation({ summary: 'Get ticket channels breakdown' })
+  getChannels(@Req() req: any) {
+    return this.reporting.getChannels(req.user.organizationId);
+  }
+
+  @Get('activity')
+  @Roles('OWNER', 'ADMIN', 'AGENT')
+  @ApiOperation({ summary: 'Get recent activity' })
+  getActivity(@Req() req: any, @Query('limit') limit?: string) {
+    return this.reporting.getActivity(
+      req.user.organizationId,
+      limit ? parseInt(limit) : 10
+    );
+  }
 }

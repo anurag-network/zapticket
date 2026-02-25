@@ -37,28 +37,94 @@ Open-source help desk and ticketing platform - a modern alternative to Zendesk a
 | Real-time | Socket.io |
 | Containers | Docker, Docker Compose |
 
-## Quick Start
+# Quick Start
 
-### Prerequisites
+## Prerequisites
 
 - Node.js 20+
 - Docker & Docker Compose
 - pnpm (recommended)
 
-### Installation
+## Choose Your Deployment
+
+ZapTicket supports two deployment methods:
+
+| Method | Best For | Requirements |
+|--------|----------|--------------|
+| **Docker Compose** | Local dev, small production | Docker |
+| **Kubernetes** | Production, scaling | Kubernetes cluster |
+
+---
+
+### 🚢 Docker Compose (Recommended for Local/Small Production)
 
 ```bash
 # Clone the repository
 git clone https://github.com/anurag-network/zapticket.git
 cd zapticket
 
-# Install dependencies
-pnpm install
-
 # Copy environment variables
 cp .env.example .env
 
-# Start infrastructure services
+# Start all services
+docker compose up -d
+
+# Access the application
+# Web: http://localhost:3000
+# API: http://localhost:3001
+# MinIO: http://localhost:9000
+```
+
+**Or use the interactive deploy script:**
+```bash
+./deploy.sh
+```
+
+---
+
+### ☸ Kubernetes (Recommended for Production)
+
+```bash
+# 1. Build and push images to your registry
+make build
+# Update REGISTRY in k8s/02-secrets.yaml
+
+# 2. Deploy to Kubernetes
+kubectl apply -k ./k8s/
+
+# 3. Check status
+kubectl get pods -n zapticket
+```
+
+**Or use the interactive deploy script:**
+```bash
+./deploy.sh
+```
+
+---
+
+## Configuration
+
+### Environment Variables
+
+Edit `.env` for Docker or `k8s/02-secrets.yaml` for Kubernetes:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `POSTGRES_PASSWORD` | Database password | `zapticket_secret` |
+| `JWT_SECRET` | JWT signing key | (change in production) |
+| `MEILISEARCH_API_KEY` | Search engine key | `zapticket_master_key` |
+| `MINIO_ROOT_PASSWORD` | S3 storage password | `zapticket_secret` |
+
+---
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start infrastructure only
 docker compose up -d postgres redis meilisearch minio
 
 # Run database migrations

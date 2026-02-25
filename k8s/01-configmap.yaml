@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zapticket-config
+  namespace: zapticket
+data:
+  NODE_ENV: "production"
+  PORT: "3001"
+  API_PORT: "3001"
+  WEB_PORT: "3000"
+  
+  # Database
+  DATABASE_HOST: "postgres"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "zapticket"
+  
+  # Redis
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  
+  # Meilisearch
+  MEILISEARCH_HOST: "http://meilisearch:7700"
+  MEILISEARCH_ENV: "production"
+  
+  # MinIO
+  MINIO_ENDPOINT: "minio"
+  MINIO_PORT: "9000"
+  MINIO_USE_SSL: "false"
+  MINIO_BUCKET: "zapticket"
+  
+  # Web
+  NEXT_PUBLIC_API_URL: "http://api:3001"

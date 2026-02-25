@@ -334,6 +334,196 @@ model Tag {
   articles    ArticleTag[]
 }
 
+model Macro {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     String   @db.Text
+  category    String   @default("General")
+  shortcuts   String[] @default([])
+  insertAt    String   @default("cursor")
+  isActive    Boolean  @default(true)
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  description String?
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?      @default(0)
+  billable    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  ticketId    String
+  ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([ticketId])
+  @@index([userId])
+}
+
+model SLAPolicy {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  
+  firstResponseTime Int   @default(3600)
+  resolutionTime    Int   @default(86400)
+  priority          Priority
+  
+  businessHours     Boolean @default(false)
+  workStartTime     String  @default("09:00")
+  workEndTime       String  @default("17:00")
+  timezone          String  @default("UTC")
+  
+  notifyBefore      Int     @default(900)
+  notifyEscalation  Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model CustomField {
+  id          String   @id @default(cuid())
+  name        String
+  type        String
+  label       String
+  placeholder String?
+  description String?
+  required    Boolean  @default(false)
+  options     String[]
+  isActive    Boolean  @default(true)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model Draft {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  ticketId    String
+  userId      String
+  isInternal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AssignmentRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  
+  conditions  Json
+  actions     Json
+  
+  teamId      String?
+  team        Team?    @relation(fields: [teamId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model ScheduledReport {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String
+  frequency   String
+  recipients  String[]
+  filters     Json?
+  isActive   Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model RetentionPolicy {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  entityType  String
+  duration    Int
+  action      String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model WebhookSubscription {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  events      String[]
+  secret      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model IPWhitelist {
+  id          String   @id @default(cuid())
+  name        String
+  ipAddress   String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
 model TicketTag {
   ticketId String
   tagId    String

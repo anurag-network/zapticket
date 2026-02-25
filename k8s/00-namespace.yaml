@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: zapticket
+  labels:
+    name: zapticket
+    environment: production

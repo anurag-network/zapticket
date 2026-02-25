@@ -11,7 +11,7 @@ import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportingModule } from './reporting/reporting.module';
-import { EscalationModule } from './escalation/escalation.module';
+import { escalationModule } from './escalation/escalation.module';
 import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { TicketLockModule } from './ticket-lock/ticket-lock.module';
 import { AssignmentModule } from './assignment/assignment.module';
@@ -48,6 +48,17 @@ import { ForumModule } from './forum/forum.module';
 import { StatusPageModule } from './status-page/status-page.module';
 import { AuditModule } from './audit/audit.module';
 import { PermissionsModule } from './permissions/permissions.module';
+import { MacrosModule } from './macros/macros.module';
+import { SlaPoliciesModule } from './sla-policies/sla-policies.module';
+import { DataExportModule } from './data-export/data-export.module';
+import { DraftsModule } from './drafts/drafts.module';
+import { AssignmentRulesModule } from './assignment-rules/assignment-rules.module';
+import { ScheduledReportsModule } from './scheduled-reports/scheduled-reports.module';
+import { RetentionPoliciesModule } from './retention-policies/retention-policies.module';
+import { WebhookSubscriptionsModule } from './webhook-subscriptions/webhook-subscriptions.module';
+import { IPWhitelistModule } from './ip-whitelist/ip-whitelist.module';
+import { TwoFactorModule } from './two-factor/two-factor.module';
+import { EmailToTicketModule } from './email-to-ticket/email-to-ticket.module';
 
 @Module({
   imports: [
@@ -100,6 +111,17 @@ import { PermissionsModule } from './permissions/permissions.module';
     StatusPageModule,
     AuditModule,
     PermissionsModule,
+    MacrosModule,
+    SlaPoliciesModule,
+    DataExportModule,
+    DraftsModule,
+    AssignmentRulesModule,
+    ScheduledReportsModule,
+    RetentionPoliciesModule,
+    WebhookSubscriptionsModule,
+    IPWhitelistModule,
+    TwoFactorModule,
+    EmailToTicketModule,
   ],
 })
 export class AppModule {}
