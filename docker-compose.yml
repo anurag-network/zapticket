@@ -119,6 +119,12 @@ services:
       retries: 3
     networks:
       - zapticket-network
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npx prisma generate &&
+        node apps/api/dist/main.js
+      "
 
   web:
     build:

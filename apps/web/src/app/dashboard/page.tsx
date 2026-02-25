@@ -51,6 +51,11 @@ import {
   RefreshCw,
   Menu,
   X,
+  Search,
+  Filter,
+  ChevronDown,
+  MoreHorizontal,
+  GripVertical,
 } from 'lucide-react';
 
 interface Metrics {
@@ -149,6 +154,8 @@ export default function DashboardPage() {
   const [channels, setChannels] = useState<ChannelData[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -402,17 +409,84 @@ export default function DashboardPage() {
       )}
 
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-6 space-y-4 md:space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl md:text-2xl font-bold tracking-tight">Dashboard</h2>
             <p className="text-muted-foreground text-sm">Welcome back! Here's what's happening.</p>
           </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
-              A
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search tickets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 w-full md:w-64"
+              />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden md:inline">Filters</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </Button>
+            <Link href="/dashboard/tickets/new">
+              <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90">
+                <Plus className="h-4 w-4" />
+                <span className="hidden md:inline">New Ticket</span>
+              </Button>
+            </Link>
           </div>
         </div>
+
+        {showFilters && (
+          <Card className="animate-in slide-in-from-top-2 duration-200">
+            <CardContent className="py-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <select
+                    value={dateRange}
+                    onChange={(e) => setDateRange(e.target.value)}
+                    className="text-sm border rounded-md px-3 py-1.5 bg-background"
+                  >
+                    <option value="7">Last 7 days</option>
+                    <option value="14">Last 14 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                  </select>
+                </div>
+                <div className="h-6 w-px bg-border" />
+                <select className="text-sm border rounded-md px-3 py-1.5 bg-background">
+                  <option value="">All Status</option>
+                  <option value="OPEN">Open</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="RESOLVED">Resolved</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+                <select className="text-sm border rounded-md px-3 py-1.5 bg-background">
+                  <option value="">All Priorities</option>
+                  <option value="URGENT">Urgent</option>
+                  <option value="HIGH">High</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="LOW">Low</option>
+                </select>
+                <select className="text-sm border rounded-md px-3 py-1.5 bg-background">
+                  <option value="">All Agents</option>
+                  <option value="unassigned">Unassigned</option>
+                </select>
+                <Button variant="ghost" size="sm" className="ml-auto">
+                  Reset
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {escalatedCount > 0 && (
           <Link href="/dashboard/escalated" className="block">
@@ -789,10 +863,11 @@ export default function DashboardPage() {
               <CardContent>
                 {agents.length === 0 ? (
                   <div className="text-center py-6">
-                    <div className="h-12 w-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
-                      <Users className="h-6 w-6 text-muted-foreground" />
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 mx-auto mb-3 flex items-center justify-center">
+                      <Award className="h-6 w-6 text-amber-600" />
                     </div>
-                    <p className="text-sm text-muted-foreground">No agent data yet</p>
+                    <p className="text-sm font-medium">No agents yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Agents will appear here once tickets are assigned</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -831,10 +906,11 @@ export default function DashboardPage() {
               <CardContent>
                 {channels.length === 0 ? (
                   <div className="text-center py-6">
-                    <div className="h-12 w-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
-                      <Inbox className="h-6 w-6 text-muted-foreground" />
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 mx-auto mb-3 flex items-center justify-center">
+                      <Layers className="h-6 w-6 text-blue-600" />
                     </div>
-                    <p className="text-sm text-muted-foreground">No channel data yet</p>
+                    <p className="text-sm font-medium">No channel data</p>
+                    <p className="text-xs text-muted-foreground mt-1">Channels will show ticket sources</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -883,10 +959,11 @@ export default function DashboardPage() {
             <CardContent>
               {activities.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="h-12 w-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
-                    <Activity className="h-6 w-6 text-muted-foreground" />
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-violet-100 to-violet-200 mx-auto mb-3 flex items-center justify-center">
+                    <RefreshCw className="h-6 w-6 text-violet-600" />
                   </div>
-                  <p className="text-sm text-muted-foreground">No recent activity</p>
+                  <p className="text-sm font-medium">No recent activity</p>
+                  <p className="text-xs text-muted-foreground mt-1">Activity will appear here as tickets are updated</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -952,10 +1029,11 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               ) : (
                 <div className="text-center py-8">
-                  <div className="h-12 w-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
-                    <BarChart3 className="h-6 w-6 text-muted-foreground" />
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mx-auto mb-3 flex items-center justify-center">
+                    <BarChart3 className="h-6 w-6 text-orange-600" />
                   </div>
-                  <p className="text-sm text-muted-foreground">No priority data</p>
+                  <p className="text-sm font-medium">No priority data</p>
+                  <p className="text-xs text-muted-foreground mt-1">Priority distribution will appear here</p>
                 </div>
               )}
             </CardContent>
@@ -1017,6 +1095,17 @@ export default function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
+          </Link>
+        </div>
+
+        <div className="fixed bottom-6 right-6 z-40 md:hidden">
+          <Link href="/dashboard/tickets/new">
+            <Button
+              size="lg"
+              className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
           </Link>
         </div>
       </main>
