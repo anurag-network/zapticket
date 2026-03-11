@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TicketsModule } from './tickets/tickets.module';
@@ -11,7 +12,7 @@ import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { ReportingModule } from './reporting/reporting.module';
-import { escalationModule } from './escalation/escalation.module';
+import { EscalationModule } from './escalation/escalation.module';
 import { ScheduledTasksModule } from './scheduled-tasks/scheduled-tasks.module';
 import { TicketLockModule } from './ticket-lock/ticket-lock.module';
 import { AssignmentModule } from './assignment/assignment.module';
@@ -59,11 +60,13 @@ import { WebhookSubscriptionsModule } from './webhook-subscriptions/webhook-subs
 import { IPWhitelistModule } from './ip-whitelist/ip-whitelist.module';
 import { TwoFactorModule } from './two-factor/two-factor.module';
 import { EmailToTicketModule } from './email-to-ticket/email-to-ticket.module';
+import { EmailTemplatesModule } from './email-templates/email-templates.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    RateLimitModule,
     ActivityLogModule,
     NotificationModule,
     AuthModule,
@@ -122,6 +125,7 @@ import { EmailToTicketModule } from './email-to-ticket/email-to-ticket.module';
     IPWhitelistModule,
     TwoFactorModule,
     EmailToTicketModule,
+    EmailTemplatesModule,
   ],
 })
 export class AppModule {}

@@ -1,0 +1,1770 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  AGENT
+  MEMBER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  ESCALATED
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TicketType {
+  BUG
+  FEATURE
+  QUESTION
+  INCIDENT
+  TASK
+  FEEDBACK
+  OTHER
+}
+
+enum MessageType {
+  NOTE
+  REPLY
+}
+
+enum ActivityType {
+  TICKET_CREATED
+  TICKET_UPDATED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  ESCALATED
+  DE_ESCALATED
+  TAG_ADDED
+  TAG_REMOVED
+  MERGED
+  REOPENED
+  CLOSED
+  RESOLVED
+  REPLY_ADDED
+  NOTE_ADDED
+  TYPE_CHANGED
+  CUSTOMER_REPLIED
+}
+
+enum ChannelType {
+  EMAIL
+  CHAT
+  FORM
+  SLACK
+  DISCORD
+  PHONE
+  SOCIAL
+  SMS
+  WHATSAPP
+  FACEBOOK
+  TWITTER
+  TELEGRAM
+}
+
+enum AIProvider {
+  OPENAI
+  ANTHROPIC
+  OLLAMA
+}
+
+enum ChatbotStatus {
+  GREETING
+  COLLECTING_INFO
+  CREATING_TICKET
+  COMPLETED
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teams          Team[]
+  members        User[]
+  tickets        Ticket[]
+  articles       Article[]
+  categories     Category[]
+  webhooks       Webhook[]
+  forms          Form[]
+  workflows      Workflow[]
+  apiKeys        ApiKey[]
+  channels       Channel[]
+  tags           Tag[]
+  assignmentRules AssignmentRule[]
+  agentWorkloads AgentWorkload[]
+  chatbotConfig  ChatbotConfig?
+  chatConversations ChatConversation[]
+  customerProfiles CustomerProfile[]
+  visualWorkflows VisualWorkflow[]
+  cannedResponses CannedResponse[]
+  activities   ActivityLog[]
+  bulkOperations BulkOperation[]
+  customerPortalUsers CustomerPortalUser[]
+  csatSurveys  CSATSurvey[]
+  agentAvailabilities AgentAvailability[]
+  notifications Notification[]
+  slaPolicies   SLAPolicy[]
+  ticketViews   TicketView[]
+  customFields  CustomField[]
+  dataImports   DataImport[]
+  chatSessions  ChatSession[]
+  timeEntries   TimeEntry[]
+  ssoConnections SSOConnection[]
+  ssoLogins     SSOLogin[]
+  leadCaptures  LeadCapture[]
+  settings       OrganizationSettings?
+  
+  // Community Forums
+  forumCategories ForumCategory[]
+  forumThreads   ForumThread[]
+  
+  // Status Page
+  statusPage     StatusPage?
+}
+
+model OrganizationSettings {
+  id             String   @id @default(cuid())
+  timezone       String   @default("UTC")
+  logoUrl        String?
+  primaryColor   String   @default("#3b82f6")
+
+  organizationId String   @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model Team {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  members        User[]
+  assignmentRules AssignmentRule[]
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  passwordHash  String?
+  avatarUrl     String?
+  role          Role     @default(MEMBER)
+  emailVerified DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  teamId         String?
+  team           Team? @relation(fields: [teamId], references: [id])
+  
+  assignedTickets Ticket[] @relation("AssignedTickets")
+  createdTickets  Ticket[] @relation("CreatedTickets")
+  messages        Message[]
+  articles        Article[]
+  escalatedTickets EscalationLog[] @relation("EscalatedBy")
+  resolvedEscalations EscalationLog[] @relation("ResolvedBy")
+  ticketLocks     TicketLock[]
+  workload        AgentWorkload?
+  ticketCollaborations TicketCollaborator[]
+  cannedResponses CannedResponse[]
+  activities      ActivityLog[]
+  bulkOperations  BulkOperation[]
+  ticketMerges    TicketMerge[]
+  availability    AgentAvailability?
+  availabilityHistory AgentAvailabilityHistory[]
+  notifications   Notification[]
+  mentions        Mention[]  @relation("MentionedUser")
+  mentionedBy     Mention[]  @relation("MentionedBy")
+  ticketFollowUps TicketFollowUp[]
+  ticketSnoozes   TicketSnooze[]
+  ticketViews     TicketView[]
+  dataImports     DataImport[]
+  chatSessions    ChatSession[]
+  timeEntries     TimeEntry[]
+  ssoLogins       SSOLogin[]
+  agentHandoffs   AgentHandoff[]
+  
+  // Community Forums
+  forumThreads    ForumThread[]
+  forumPosts      ForumPost[]
+  forumVotes      ForumVote[]
+}
+
+model Ticket {
+  id            String        @id @default(cuid())
+  subject       String
+  description   String        @db.Text
+  type          TicketType    @default(QUESTION)
+  status        TicketStatus  @default(OPEN)
+  priority      Priority      @default(NORMAL)
+  dueAt         DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+  escalatedAt   DateTime?
+  escalatedReason String?
+  isMerged      Boolean       @default(false)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  assigneeId    String?
+  assignee      User?         @relation("AssignedTickets", fields: [assigneeId], references: [id])
+  creatorId     String
+  creator       User          @relation("CreatedTickets", fields: [creatorId], references: [id])
+
+  channelId     String?
+  channel       Channel?      @relation(fields: [channelId], references: [id])
+
+  customerProfileId String?
+  customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+
+  customerPortalUserId String?
+  customerPortalUser   CustomerPortalUser? @relation(fields: [customerPortalUserId], references: [id])
+
+  mergedIntoId  String?
+  mergedInto    Ticket?       @relation("MergedTickets", fields: [mergedIntoId], references: [id])
+  mergedFrom    Ticket[]      @relation("MergedTickets")
+
+  messages      Message[]
+  tags          TicketTag[]
+  formSubmissions FormSubmission[]
+  escalationLogs EscalationLog[]
+  lock          TicketLock?
+  chatConversations ChatConversation[]
+  sentimentScores SentimentScore[]
+  collaborators TicketCollaborator[]
+  responseSuggestions ResponseSuggestion[]
+  workflowExecutions WorkflowExecution[]
+  activities    ActivityLog[]
+  csatSurvey    CSATSurvey?
+  notifications Notification[]
+  slaBreaches   SLABreach[]
+  customerInteractions CustomerInteraction[]
+  primaryTicketMerges TicketMerge[] @relation("PrimaryMerge")
+  mergedTicketRecords TicketMerge[] @relation("MergedInto")
+  mentions       Mention[]
+  followUps      TicketFollowUp[]
+  snoozes        TicketSnooze[]
+  customFieldValues CustomFieldValue[]
+  chatSessions   ChatSession[]
+  timeEntries    TimeEntry[]
+}
+
+model Message {
+  id          String      @id @default(cuid())
+  content     String      @db.Text
+  type        MessageType @default(REPLY)
+  createdAt   DateTime    @default(now())
+
+  ticketId    String
+  ticket      Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id])
+
+  attachments Attachment[]
+  sentiment   SentimentScore?
+  mentions    Mention[]
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  filename    String
+  mimeType    String
+  size        Int
+  url         String
+  key         String
+
+  messageId   String
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Channel {
+  id          String      @id @default(cuid())
+  type        ChannelType
+  name        String
+  config      Json?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  tickets     Ticket[]
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String
+  color       String   @default("#6b7280")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  tickets     TicketTag[]
+  articles    ArticleTag[]
+}
+
+model Macro {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     String   @db.Text
+  category    String   @default("General")
+  shortcuts   String[] @default([])
+  insertAt    String   @default("cursor")
+  isActive    Boolean  @default(true)
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  description String?   @db.Text
+  billable    Boolean   @default(true)
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  ticketId    String
+  ticket      Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([ticketId])
+  @@index([userId])
+  @@index([startTime])
+}
+
+model SLAPolicy {
+  id                  String   @id @default(cuid())
+  name                String
+  description         String?
+  priority            SLAPriority
+  responseTimeMinutes Int
+  resolutionTimeMinutes Int
+  businessHoursOnly   Boolean  @default(false)
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  breaches      SLABreach[]
+
+  @@index([organizationId, active])
+  @@index([priority])
+}
+
+model CustomField {
+  id          String           @id @default(cuid())
+  name        String
+  key         String
+  type        CustomFieldType
+  required    Boolean          @default(false)
+  description String?
+  placeholder String?
+  defaultValue String?
+  options     Json?
+  validation  Json?
+  position    Int              @default(0)
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  values      CustomFieldValue[]
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@index([organizationId, active])
+}
+
+model Draft {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  ticketId    String
+  userId      String
+  isInternal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AssignmentRule {
+  id           String            @id @default(cuid())
+  name         String
+  description  String?
+  strategy     AssignmentStrategy @default(ROUND_ROBIN)
+  conditions   Json?
+  active       Boolean           @default(true)
+  priority     Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  teamId      String?
+  team        Team?   @relation(fields: [teamId], references: [id])
+
+  @@index([organizationId, active])
+}
+
+model ScheduledReport {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String
+  frequency   String
+  recipients  String[]
+  filters     Json?
+  isActive   Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model RetentionPolicy {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  entityType  String
+  duration    Int
+  action      String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model WebhookSubscription {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  events      String[]
+  secret      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model IPWhitelist {
+  id          String   @id @default(cuid())
+  name        String
+  ipAddress   String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model TicketTag {
+  ticketId String
+  tagId    String
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([ticketId, tagId])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  icon        String?
+  order       Int      @default(0)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  articles    Article[]
+  parentCategoryId String?
+  parentCategory   Category?  @relation("CategoryTree", fields: [parentCategoryId], references: [id])
+  subCategories    Category[] @relation("CategoryTree")
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String
+  content     String   @db.Text
+  excerpt     String?
+  published   Boolean  @default(false)
+  order       Int      @default(0)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+
+  tags        ArticleTag[]
+}
+
+model ArticleTag {
+  articleId String
+  tagId     String
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+}
+
+model Webhook {
+  id          String   @id @default(cuid())
+  url         String
+  events      String[]
+  secret      String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  event        String
+  payload      Json
+  statusCode   Int?
+  response     String?  @db.Text
+  deliveredAt  DateTime?
+  attempts     Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  webhookId    String
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+}
+
+model Form {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  fields      Json
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  submissions FormSubmission[]
+}
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  data      Json
+  createdAt DateTime @default(now())
+
+  formId String
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  ticketId String?
+  ticket   Ticket? @relation(fields: [ticketId], references: [id])
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  trigger     Json
+  actions     Json
+  active      Boolean  @default(true)
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String
+  key         String   @unique
+  permissions String[]
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model EscalationLog {
+  id            String   @id @default(cuid())
+  reason        String
+  autoEscalated Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  ticketId      String
+  ticket        Ticket  @relation(fields: [ticketId], references: [id])
+
+  escalatedById String?
+  escalatedBy   User?   @relation("EscalatedBy", fields: [escalatedById], references: [id])
+
+  resolvedAt    DateTime?
+  resolvedById  String?
+  resolvedBy    User?   @relation("ResolvedBy", fields: [resolvedById], references: [id])
+}
+
+model TicketLock {
+  id        String   @id @default(cuid())
+  lockedAt  DateTime @default(now())
+  expiresAt DateTime
+
+  ticketId  String   @unique
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  lockedById String
+  lockedBy   User     @relation(fields: [lockedById], references: [id])
+
+  @@index([expiresAt])
+}
+
+model AgentWorkload {
+  id              String   @id @default(cuid())
+  openTickets     Int      @default(0)
+  lastAssignedAt  DateTime?
+
+  agentId         String   @unique
+  agent           User     @relation(fields: [agentId], references: [id])
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, openTickets])
+}
+
+model ChatConversation {
+  id              String        @id @default(cuid())
+  sessionId       String        @unique
+  status          ChatbotStatus @default(GREETING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  visitorName     String?
+  visitorEmail    String?
+  visitorPhone    String?
+  category        String?
+  description     String?       @db.Text
+  detectedLanguage String?
+  
+  // Handoff
+  handoffRequested Boolean      @default(false)
+  handoffReason   String?
+  
+  // Lead
+  isLead          Boolean       @default(false)
+  
+  ticketId        String?
+  ticket          Ticket?       @relation(fields: [ticketId], references: [id])
+
+  chatbotConfigId String?
+  chatbotConfig   ChatbotConfig? @relation(fields: [chatbotConfigId], references: [id])
+
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+
+  messages        ChatMessage[]
+  leadCapture     LeadCapture?
+  handoff         AgentHandoff?
+
+  @@index([sessionId])
+  @@index([organizationId, createdAt])
+  @@index([handoffRequested])
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  content        String   @db.Text
+  isBot          Boolean  @default(false)
+  language       String?
+  sentiment      String?
+  intent         String?
+  confidence     Float?
+  createdAt      DateTime @default(now())
+
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model SentimentScore {
+  id          String       @id @default(cuid())
+  score       Float
+  type        SentimentType
+  confidence  Float
+  keywords    String[]
+  analyzedAt  DateTime     @default(now())
+
+  ticketId    String?
+  ticket      Ticket?      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  messageId   String?  @unique
+  message     Message?     @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, analyzedAt])
+  @@index([type])
+}
+
+model CustomerProfile {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  phone           String?
+  company         String?
+  notes           String?  @db.Text
+  healthScore     Float    @default(50)
+  healthStatus    String   @default("neutral")
+  totalTickets    Int      @default(0)
+  openTickets     Int      @default(0)
+  avgSatisfaction Float?
+  lastContactAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  tickets         Ticket[]
+  healthHistory   CustomerHealthHistory[]
+  interactions    CustomerInteraction[]
+
+  @@index([organizationId, healthScore])
+  @@index([email])
+}
+
+model CustomerHealthHistory {
+  id              String   @id @default(cuid())
+  score           Float
+  status          String
+  reason          String?
+  recordedAt      DateTime @default(now())
+
+  customerProfileId String
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([customerProfileId, recordedAt])
+}
+
+model CustomerInteraction {
+  id              String   @id @default(cuid())
+  type            String
+  summary         String?  @db.Text
+  sentiment       Float?
+  occurredAt      DateTime @default(now())
+
+  customerProfileId String
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+
+  ticketId        String?
+  ticket          Ticket?  @relation(fields: [ticketId], references: [id])
+
+  @@index([customerProfileId, occurredAt])
+}
+
+model TicketCollaborator {
+  id          String   @id @default(cuid())
+  joinedAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  isEditing   Boolean  @default(false)
+  cursorPosition Json?
+
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([ticketId, userId])
+  @@index([ticketId])
+}
+
+model ResponseSuggestion {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  source      String
+  confidence  Float
+  used        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+}
+
+model VisualWorkflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  nodes       Json
+  edges       Json
+  active      Boolean  @default(true)
+  triggerType String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  executions   WorkflowExecution[]
+
+  @@index([organizationId, active])
+}
+
+model WorkflowExecution {
+  id           String   @id @default(cuid())
+  status       String   @default("pending")
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  error        String?  @db.Text
+  executionLog Json?
+
+  workflowId   String
+  workflow     VisualWorkflow @relation(fields: [workflowId], references: [id])
+
+  ticketId     String?
+  ticket       Ticket?  @relation(fields: [ticketId], references: [id])
+
+  @@index([workflowId, startedAt])
+  @@index([ticketId])
+}
+
+model CannedResponse {
+  id          String   @id @default(cuid())
+  name        String
+  content     String   @db.Text
+  category    String?
+  shortcuts   String[]
+  variables   Json?
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId, category])
+}
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  description String       @db.Text
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+
+  ticketId    String
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([type])
+}
+
+model TicketMerge {
+  id          String   @id @default(cuid())
+  mergedAt    DateTime @default(now())
+  reason      String?
+
+  primaryTicketId String
+  primaryTicket   Ticket  @relation("PrimaryMerge", fields: [primaryTicketId], references: [id])
+
+  mergedTicketId  String
+  mergedTicket    Ticket  @relation("MergedInto", fields: [mergedTicketId], references: [id])
+
+  mergedById  String
+  mergedBy    User    @relation(fields: [mergedById], references: [id])
+
+  @@unique([primaryTicketId, mergedTicketId])
+}
+
+model BulkOperation {
+  id          String   @id @default(cuid())
+  type        String
+  status      String   @default("pending")
+  totalCount  Int
+  processedCount Int   @default(0)
+  failedCount Int      @default(0)
+  errors      Json?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById String
+  createdBy   User    @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId, createdAt])
+}
+
+model CustomerPortalUser {
+  id            String   @id @default(cuid())
+  email         String
+  name          String?
+  phone         String?
+  passwordHash  String?
+  avatarUrl     String?
+  emailVerified DateTime?
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  tickets        Ticket[]
+  csatSurveys    CSATSurvey[]
+  csatResponses  CSATResponse[]
+
+  @@unique([email, organizationId])
+  @@index([organizationId])
+}
+
+model CSATSurvey {
+  id            String   @id @default(cuid())
+  rating        Int
+  comment       String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  ticketId      String   @unique
+  ticket        Ticket   @relation(fields: [ticketId], references: [id])
+
+  customerId    String?
+  customer      CustomerPortalUser? @relation(fields: [customerId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  responses      CSATResponse[]
+
+  @@index([organizationId, createdAt])
+  @@index([rating])
+}
+
+model CSATResponse {
+  id            String   @id @default(cuid())
+  rating        Int
+  comment       String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  surveyId      String
+  survey        CSATSurvey @relation(fields: [surveyId], references: [id])
+
+  customerId    String
+  customer      CustomerPortalUser @relation(fields: [customerId], references: [id])
+
+  @@index([surveyId])
+}
+
+model AgentAvailability {
+  id            String      @id @default(cuid())
+  status        AgentStatus @default(OFFLINE)
+  statusMessage String?
+  lastSeenAt    DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  agentId       String      @unique
+  agent         User        @relation(fields: [agentId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status])
+}
+
+model AgentAvailabilityHistory {
+  id          String      @id @default(cuid())
+  status      AgentStatus
+  duration    Int
+  startedAt   DateTime    @default(now())
+  endedAt     DateTime?
+
+  agentId     String
+  agent       User        @relation(fields: [agentId], references: [id])
+
+  @@index([agentId, startedAt])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  message     String   @db.Text
+  data        Json?
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  ticketId    String?
+  ticket      Ticket?  @relation(fields: [ticketId], references: [id])
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+model SLABreach {
+  id            String   @id @default(cuid())
+  breachType    String
+  breachedAt    DateTime @default(now())
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+
+  ticketId      String
+  ticket        Ticket   @relation(fields: [ticketId], references: [id])
+
+  policyId      String
+  policy        SLAPolicy @relation(fields: [policyId], references: [id])
+
+  @@index([ticketId])
+  @@index([breachedAt])
+}
+
+model Mention {
+  id          String   @id @default(cuid())
+  mentionedUserId String
+  mentionedUser   User    @relation("MentionedUser", fields: [mentionedUserId], references: [id])
+  mentionedById   String
+  mentionedBy     User    @relation("MentionedBy", fields: [mentionedById], references: [id])
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  messageId   String
+  message     Message  @relation(fields: [messageId], references: [id])
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([mentionedUserId, read])
+  @@index([ticketId])
+}
+
+model TicketFollowUp {
+  id          String   @id @default(cuid())
+  type        String
+  remindAt    DateTime
+  completedAt DateTime?
+  note        String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@index([remindAt])
+  @@index([ticketId])
+}
+
+model TicketSnooze {
+  id          String   @id @default(cuid())
+  snoozedUntil DateTime
+  reason      String?
+  snoozedAt   DateTime @default(now())
+  unsnoozedAt DateTime?
+
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+
+  snoozedById String
+  snoozedBy   User     @relation(fields: [snoozedById], references: [id])
+
+  @@index([snoozedUntil])
+}
+
+model TicketView {
+  id          String   @id @default(cuid())
+  name        String
+  icon        String?
+  color       String?
+  filters     Json
+  sortBy      String?
+  sortOrder   String   @default("desc")
+  isDefault   Boolean  @default(false)
+  isShared    Boolean  @default(false)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  columns     TicketViewColumn[]
+
+  @@index([organizationId])
+  @@index([createdById])
+}
+
+model TicketViewColumn {
+  id          String   @id @default(cuid())
+  field       String
+  label       String?
+  visible     Boolean  @default(true)
+  width       Int?
+  position    Int      @default(0)
+
+  viewId      String
+  view        TicketView @relation(fields: [viewId], references: [id], onDelete: Cascade)
+
+  @@index([viewId])
+}
+
+model CustomFieldValue {
+  id        String   @id @default(cuid())
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fieldId   String
+  field     CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  ticketId  String
+  ticket    Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldId, ticketId])
+  @@index([fieldId])
+  @@index([ticketId])
+}
+
+model DataImport {
+  id            String       @id @default(cuid())
+  source        ImportSource
+  status        ImportStatus @default(PENDING)
+  fileName      String
+  fileSize      Int
+  totalRecords  Int          @default(0)
+  processedRecords Int       @default(0)
+  failedRecords Int          @default(0)
+  errorLog      String?      @db.Text
+  fieldMapping  Json?
+  options       Json?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdById   String
+  createdBy     User         @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model ChatSession {
+  id          String            @id @default(cuid())
+  status      ChatSessionStatus @default(QUEUED)
+  visitorName String?
+  visitorEmail String?
+  visitorIp   String?
+  visitorUserAgent String?
+  pageUrl     String?
+  pageTitle   String?
+  startedAt   DateTime          @default(now())
+  endedAt     DateTime?
+  waitTime    Int?
+  duration    Int?
+  rating      Int?
+  feedback    String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  agentId     String?
+  agent       User?        @relation(fields: [agentId], references: [id])
+
+  ticketId    String?
+  ticket      Ticket?      @relation(fields: [ticketId], references: [id])
+
+  messages    LiveChatMessage[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([agentId])
+}
+
+model LiveChatMessage {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  senderType  String
+  senderName  String?
+  createdAt   DateTime @default(now())
+
+  sessionId   String
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+model SSOConnection {
+  id            String       @id @default(cuid())
+  name          String
+  provider      SSOProvider
+  enabled       Boolean      @default(false)
+  domain        String
+  
+  // SAML Configuration
+  samlEntryPoint    String?
+  samlCertificate   String?  @db.Text
+  samlIssuer        String?
+  samlCallbackUrl   String?
+  
+  // OIDC Configuration
+  oidcClientId      String?
+  oidcClientSecret  String?
+  oidcDiscoveryUrl  String?
+  oidcCallbackUrl   String?
+  
+  // Attribute Mapping
+  emailAttribute    String    @default("email")
+  nameAttribute     String    @default("name")
+  
+  // Provisioning
+  autoProvision     Boolean   @default(true)
+  defaultRole       Role?     @default(MEMBER)
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  ssoLogins      SSOLogin[]
+
+  @@unique([organizationId, domain])
+  @@index([organizationId])
+  @@index([domain])
+}
+
+model SSOLogin {
+  id            String   @id @default(cuid())
+  ssoProvider   String
+  externalId    String
+  email         String
+  name          String?
+  success       Boolean
+  errorMessage  String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+
+  ssoConnectionId String?
+  ssoConnection   SSOConnection? @relation(fields: [ssoConnectionId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ChatbotConfig {
+  id              String   @id @default(cuid())
+  botName         String   @default("Zapdeck")
+  welcomeMessage  String    @default("Hi! I'm Zapdeck, your support assistant. How can I help you today?")
+  offlineMessage  String    @default("Sorry, we're currently offline. Please leave a message and we'll get back to you soon.")
+  
+  // AI Configuration
+  aiProvider      AIProvider @default(OPENAI)
+  aiModel         String?
+  aiApiKey        String?
+  
+  // Features
+  enabled         Boolean   @default(true)
+  handoffEnabled  Boolean   @default(true)
+  proactiveChat   Boolean   @default(true)
+  multilingual    Boolean   @default(true)
+  
+  // KB Integration
+  kbEnabled       Boolean   @default(true)
+  kbConfidenceThreshold Float @default(0.7)
+  
+  // Lead Capture
+  leadCaptureEnabled Boolean @default(true)
+  leadFields      Json?
+  
+  // Proactive Engagement
+  proactiveDelay      Int     @default(5000)
+  proactiveTriggers   Json?
+  proactiveMessage    String?
+  
+  // Appearance
+  primaryColor    String    @default("#3b82f6")
+  position        String    @default("bottom-right")
+  avatarUrl       String?
+  
+  // Language
+  defaultLanguage String    @default("en")
+  supportedLanguages String? @default("en,es,fr,de,pt,it,nl")
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organizationId  String    @unique
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  conversations   ChatConversation[]
+  trainingData    ChatbotTraining[]
+  leadCaptures    LeadCapture[]
+  handoffs        AgentHandoff[]
+
+  @@index([organizationId])
+}
+
+model ChatbotTraining {
+  id          String   @id @default(cuid())
+  type        String
+  question    String   @db.Text
+  answer      String   @db.Text
+  keywords    String[]
+  priority    Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  configId    String
+  config      ChatbotConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  articleId   String?
+
+  @@index([configId])
+  @@index([type])
+}
+
+model LeadCapture {
+  id          String   @id @default(cuid())
+  name        String?
+  email       String
+  phone       String?
+  company     String?
+  message     String?  @db.Text
+  source      String?
+  pageUrl     String?
+  data        Json?
+  contacted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  configId    String
+  config      ChatbotConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  conversationId String?  @unique
+  conversation   ChatConversation? @relation(fields: [conversationId], references: [id])
+
+  @@index([organizationId])
+  @@index([createdAt])
+  @@index([contacted])
+}
+
+model AgentHandoff {
+  id          String   @id @default(cuid())
+  reason      String?
+  status      String   @default("pending")
+  assignedToId String?
+  createdAt   DateTime @default(now())
+  acceptedAt  DateTime?
+  endedAt     DateTime?
+  notes       String?  @db.Text
+  rating      Int?
+  feedback    String?
+
+  conversationId String   @unique
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id])
+
+  configId    String
+  config      ChatbotConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  assignedTo  User?    @relation(fields: [assignedToId], references: [id])
+
+  @@index([conversationId])
+  @@index([status])
+}
+
+model ForumCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  order       Int      @default(0)
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  threads     ForumThread[]
+
+  @@unique([slug, organizationId])
+  @@index([organizationId])
+}
+
+model ForumThread {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  isPinned    Boolean  @default(false)
+  isLocked    Boolean  @default(false)
+  isSolved    Boolean  @default(false)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+
+  categoryId  String
+  category    ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  posts       ForumPost[]
+  votes       ForumVote[]
+
+  @@unique([slug, organizationId])
+  @@index([categoryId])
+  @@index([authorId])
+}
+
+model ForumPost {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  isAnswer    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+
+  threadId    String
+  thread      ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  votes       ForumVote[]
+
+  @@index([threadId])
+  @@index([authorId])
+}
+
+model ForumVote {
+  id          String   @id @default(cuid())
+  value       Int      @default(0) // 1 = upvote, -1 = downvote
+  createdAt   DateTime @default(now())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  postId      String?
+  post        ForumPost? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  threadId    String?
+  thread      ForumThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, threadId])
+}
+
+model StatusPage {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  logoUrl     String?
+  primaryColor String  @default("#3b82f6")
+  domain      String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String   @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  components  StatusComponent[]
+  incidents   StatusIncident[]
+  subscribers StatusSubscriber[]
+
+  @@index([slug])
+}
+
+model StatusComponent {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  order       Int      @default(0)
+  status      String   @default("operational") // operational, degraded, partial_outage, major_outage
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  updates     StatusUpdate[]
+
+  @@index([statusPageId])
+}
+
+model StatusIncident {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("investigating") // investigating, identified, monitoring, resolved
+  severity    String   @default("minor") // critical, major, minor
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  updatedAt   DateTime @updatedAt
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  updates     StatusUpdate[]
+
+  @@index([statusPageId])
+  @@index([status])
+}
+
+model StatusUpdate {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  status      String
+  createdAt   DateTime @default(now())
+
+  incidentId  String
+  incident    StatusIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  componentId String?
+  component   StatusComponent? @relation(fields: [componentId], references: [id])
+
+  @@index([incidentId])
+}
+
+model StatusSubscriber {
+  id          String   @id @default(cuid())
+  email       String
+  phone       String?
+  verified    Boolean  @default(false)
+  verifyToken String?
+  createdAt   DateTime @default(now())
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  @@unique([email, statusPageId])
+  @@index([statusPageId])
+}
+
+}
+
+// ============ Status Page ============
+
+model StatusPage {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  logoUrl     String?
+  primaryColor String  @default("#3b82f6")
+  domain      String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizationId String   @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  components  StatusComponent[]
+  incidents   StatusIncident[]
+  subscribers StatusSubscriber[]
+
+  @@index([slug])
+}
+
+model StatusComponent {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  order       Int      @default(0)
+  status      String   @default("operational") // operational, degraded, partial_outage, major_outage
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  updates     StatusUpdate[]
+
+  @@index([statusPageId])
+}
+
+model StatusIncident {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("investigating") // investigating, identified, monitoring, resolved
+  severity    String   @default("minor") // critical, major, minor
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  updatedAt   DateTime @updatedAt
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  updates     StatusUpdate[]
+
+  @@index([statusPageId])
+  @@index([status])
+}
+
+model StatusUpdate {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  status      String
+  createdAt   DateTime @default(now())
+
+  incidentId  String
+  incident    StatusIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  componentId String?
+  component   StatusComponent? @relation(fields: [componentId], references: [id])
+
+  @@index([incidentId])
+}
+
+model StatusSubscriber {
+  id          String   @id @default(cuid())
+  email       String
+  phone       String?
+  verified    Boolean  @default(false)
+  verifyToken String?
+  createdAt   DateTime @default(now())
+
+  statusPageId String
+  statusPage   StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+
+  @@unique([email, statusPageId])
+  @@index([statusPageId])
+}

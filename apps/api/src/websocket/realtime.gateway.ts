@@ -31,7 +31,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     
     setInterval(() => {
       this.broadcastMetrics();
-    }, 30000);
+    }, 5000);
   }
 
   handleConnection(client: Socket) {
@@ -159,7 +159,35 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     this.server.to(`org:${organizationId}`).emit('sla:alert', alert);
   }
 
+  broadcastNotification(organizationId: string, notification: any) {
+    this.server.to(`org:${organizationId}`).emit('notification:new', notification);
+  }
+
+  broadcastTyping(ticketId: string, userId: string, isTyping: boolean) {
+    this.server.to(`ticket:${ticketId}`).emit('typing', { userId, isTyping });
+  }
+
+  broadcastCSATUpdate(organizationId: string, data: any) {
+    this.server.to(`org:${organizationId}`).emit('csat:update', data);
+  }
+
+  broadcastChannelUpdate(organizationId: string, data: any) {
+    this.server.to(`org:${organizationId}`).emit('channel:update', data);
+  }
+
+  broadcastBulkUpdate(organizationId: string, data: any) {
+    this.server.to(`org:${organizationId}`).emit('bulk:update', data);
+  }
+
   getConnectedClients(organizationId: string): number {
     return this.organizationRooms.get(organizationId)?.size || 0;
+  }
+
+  emitToOrganization(organizationId: string, event: string, data: any) {
+    this.server.to(`org:${organizationId}`).emit(event, data);
+  }
+
+  emitToTicket(ticketId: string, event: string, data: any) {
+    this.server.to(`ticket:${ticketId}`).emit(event, data);
   }
 }

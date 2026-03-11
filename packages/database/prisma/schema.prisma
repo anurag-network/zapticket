@@ -142,6 +142,12 @@ model Organization {
   
   // Status Page
   statusPage     StatusPage?
+  
+  macros               Macro[]
+  scheduledReports     ScheduledReport[]
+  retentionPolicies    RetentionPolicy[]
+  webhookSubscriptions WebhookSubscription[]
+  ipWhitelists         IPWhitelist[]
 }
 
 model OrganizationSettings {
@@ -163,192 +169,8 @@ model Team {
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  members        User[]
-  assignmentRules AssignmentRule[]
-}
 
-model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  name          String?
-  passwordHash  String?
-  avatarUrl     String?
-  role          Role     @default(MEMBER)
-  emailVerified DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  teamId         String?
-  team           Team? @relation(fields: [teamId], references: [id])
-  
-  assignedTickets Ticket[] @relation("AssignedTickets")
-  createdTickets  Ticket[] @relation("CreatedTickets")
-  messages        Message[]
-  articles        Article[]
-  escalatedTickets EscalationLog[] @relation("EscalatedBy")
-  resolvedEscalations EscalationLog[] @relation("ResolvedBy")
-  ticketLocks     TicketLock[]
-  workload        AgentWorkload?
-  ticketCollaborations TicketCollaborator[]
-  cannedResponses CannedResponse[]
-  activities      ActivityLog[]
-  bulkOperations  BulkOperation[]
-  ticketMerges    TicketMerge[]
-  availability    AgentAvailability?
-  availabilityHistory AgentAvailabilityHistory[]
-  notifications   Notification[]
-  mentions        Mention[]  @relation("MentionedUser")
-  mentionedBy     Mention[]  @relation("MentionedBy")
-  ticketFollowUps TicketFollowUp[]
-  ticketSnoozes   TicketSnooze[]
-  ticketViews     TicketView[]
-  dataImports     DataImport[]
-  chatSessions    ChatSession[]
-  timeEntries     TimeEntry[]
-  ssoLogins       SSOLogin[]
-  agentHandoffs   AgentHandoff[]
-  
-  // Community Forums
-  forumThreads    ForumThread[]
-  forumPosts      ForumPost[]
-  forumVotes      ForumVote[]
-}
-
-model Ticket {
-  id            String        @id @default(cuid())
-  subject       String
-  description   String        @db.Text
-  type          TicketType    @default(QUESTION)
-  status        TicketStatus  @default(OPEN)
-  priority      Priority      @default(NORMAL)
-  dueAt         DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  resolvedAt    DateTime?
-  closedAt      DateTime?
-  escalatedAt   DateTime?
-  escalatedReason String?
-  isMerged      Boolean       @default(false)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  assigneeId    String?
-  assignee      User?         @relation("AssignedTickets", fields: [assigneeId], references: [id])
-  creatorId     String
-  creator       User          @relation("CreatedTickets", fields: [creatorId], references: [id])
-
-  channelId     String?
-  channel       Channel?      @relation(fields: [channelId], references: [id])
-
-  customerProfileId String?
-  customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
-
-  customerPortalUserId String?
-  customerPortalUser   CustomerPortalUser? @relation(fields: [customerPortalUserId], references: [id])
-
-  mergedIntoId  String?
-  mergedInto    Ticket?       @relation("MergedTickets", fields: [mergedIntoId], references: [id])
-  mergedFrom    Ticket[]      @relation("MergedTickets")
-
-  messages      Message[]
-  tags          TicketTag[]
-  formSubmissions FormSubmission[]
-  escalationLogs EscalationLog[]
-  lock          TicketLock?
-  chatConversations ChatConversation[]
-  sentimentScores SentimentScore[]
-  collaborators TicketCollaborator[]
-  responseSuggestions ResponseSuggestion[]
-  workflowExecutions WorkflowExecution[]
-  activities    ActivityLog[]
-  csatSurvey    CSATSurvey?
-  notifications Notification[]
-  slaBreaches   SLABreach[]
-  customerInteractions CustomerInteraction[]
-  primaryTicketMerges TicketMerge[] @relation("PrimaryMerge")
-  mergedTicketRecords TicketMerge[] @relation("MergedInto")
-  mentions       Mention[]
-  followUps      TicketFollowUp[]
-  snoozes        TicketSnooze[]
-  customFieldValues CustomFieldValue[]
-  chatSessions   ChatSession[]
-  timeEntries    TimeEntry[]
-}
-
-model Message {
-  id          String      @id @default(cuid())
-  content     String      @db.Text
-  type        MessageType @default(REPLY)
-  createdAt   DateTime    @default(now())
-
-  ticketId    String
-  ticket      Ticket      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  authorId    String
-  author      User        @relation(fields: [authorId], references: [id])
-
-  attachments Attachment[]
-  sentiment   SentimentScore?
-  mentions    Mention[]
-}
-
-model Attachment {
-  id          String   @id @default(cuid())
-  filename    String
-  mimeType    String
-  size        Int
-  url         String
-  key         String
-
-  messageId   String
-  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-}
-
-model Channel {
-  id          String      @id @default(cuid())
-  type        ChannelType
-  name        String
-  config      Json?
-  active      Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  tickets     Ticket[]
-}
-
-model Tag {
-  id          String   @id @default(cuid())
-  name        String
-  color       String   @default("#6b7280")
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  tickets     TicketTag[]
-  articles    ArticleTag[]
-}
-
-model Macro {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  content     String   @db.Text
-  category    String   @default("General")
-  shortcuts   String[] @default([])
-  insertAt    String   @default("cursor")
-  isActive    Boolean  @default(true)
-  usageCount  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  values      CustomFieldValue[]
 
   @@index([organizationId])
 }
@@ -400,6 +222,8 @@ model SLAPolicy {
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+
+  breaches      SLABreach[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -716,25 +540,7 @@ enum AssignmentStrategy {
   SKILLS_BASED
 }
 
-model AssignmentRule {
-  id           String            @id @default(cuid())
-  name         String
-  description  String?
-  strategy     AssignmentStrategy @default(ROUND_ROBIN)
-  conditions   Json?
-  active       Boolean           @default(true)
-  priority     Int               @default(0)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
 
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  teamId      String?
-  team        Team?   @relation(fields: [teamId], references: [id])
-
-  @@index([organizationId, active])
-}
 
 model AgentWorkload {
   id              String   @id @default(cuid())
@@ -1162,26 +968,7 @@ model Notification {
   @@index([organizationId, createdAt])
 }
 
-model SLAPolicy {
-  id                  String   @id @default(cuid())
-  name                String
-  description         String?
-  priority            SLAPriority
-  responseTimeMinutes Int
-  resolutionTimeMinutes Int
-  businessHoursOnly   Boolean  @default(false)
-  active              Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
 
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  breaches      SLABreach[]
-
-  @@index([organizationId, active])
-  @@index([priority])
-}
 
 model SLABreach {
   id            String   @id @default(cuid())
@@ -1309,31 +1096,7 @@ enum CustomFieldType {
   TEAM
 }
 
-model CustomField {
-  id          String           @id @default(cuid())
-  name        String
-  key         String
-  type        CustomFieldType
-  required    Boolean          @default(false)
-  description String?
-  placeholder String?
-  defaultValue String?
-  options     Json?
-  validation  Json?
-  position    Int              @default(0)
-  active      Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
 
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  values      CustomFieldValue[]
-
-  @@unique([organizationId, key])
-  @@index([organizationId])
-  @@index([organizationId, active])
-}
 
 model CustomFieldValue {
   id        String   @id @default(cuid())
@@ -1452,30 +1215,7 @@ model LiveChatMessage {
   @@index([createdAt])
 }
 
-model TimeEntry {
-  id          String    @id @default(cuid())
-  description String?   @db.Text
-  billable    Boolean   @default(true)
-  startTime   DateTime
-  endTime     DateTime?
-  duration    Int?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  ticketId    String
-  ticket      Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
-
-  @@index([organizationId])
-  @@index([ticketId])
-  @@index([userId])
-  @@index([startTime])
-}
 
 enum SSOProvider {
   SAML

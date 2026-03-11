@@ -44,6 +44,7 @@ import {
   FileBarChart,
   Bot,
   ListChecks,
+  Bell,
 } from 'lucide-react';
 
 const settingsCategories = [
@@ -71,7 +72,7 @@ const settingsCategories = [
     items: [
       { title: 'Knowledge Base', description: 'Articles and categories', href: '/dashboard/settings/knowledge-base', icon: BookOpen, color: 'text-emerald-500' },
       { title: 'Tags', description: 'Manage ticket and article tags', href: '/dashboard/settings/tags', icon: Tag, color: 'text-gray-500' },
-      { title: 'Templates', description: 'Email and notification templates', href: '/dashboard/settings/templates', icon: FileCode, color: 'text-violet-500' },
+      { title: 'Email Templates', description: 'Customize email notifications', href: '/dashboard/settings/email-templates', icon: FileCode, color: 'text-violet-500' },
       { title: 'Text Modules', description: 'Canned responses and snippets', href: '/dashboard/settings/text-modules', icon: FileText, color: 'text-slate-500' },
     ],
   },
@@ -111,6 +112,7 @@ const settingsCategories = [
       { title: 'Core Workflows', description: 'Workflow management', href: '/dashboard/settings/workflows', icon: Workflow, color: 'text-purple-500' },
       { title: 'Translations', description: 'Language and localization', href: '/dashboard/settings/translations', icon: Languages, color: 'text-green-500' },
       { title: 'Data Privacy', description: 'Privacy and compliance', href: '/dashboard/settings/data-privacy', icon: ShieldCheck, color: 'text-indigo-500' },
+      { title: 'Notifications', description: 'Email notification preferences', href: '/dashboard/settings/notifications', icon: Bell, color: 'text-orange-500' },
       { title: 'Maintenance', description: 'System maintenance', href: '/dashboard/settings/maintenance', icon: Wrench, color: 'text-gray-500' },
       { title: 'Monitoring', description: 'System health monitoring', href: '/dashboard/settings/monitoring', icon: Activity, color: 'text-emerald-500' },
       { title: 'Packages', description: 'Installed packages', href: '/dashboard/settings/packages', icon: Package, color: 'text-amber-500' },

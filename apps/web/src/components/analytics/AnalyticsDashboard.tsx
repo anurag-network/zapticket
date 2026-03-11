@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@zapticket/ui/components/ui/card';
 import { Badge } from '@zapticket/ui/components/ui/badge';
 import { Button } from '@zapticket/ui/components/ui/button';
+import { useSocketIO } from '@/hooks/useSocketIO';
 import { 
   Ticket, Clock, Users, ThumbsUp, AlertTriangle, 
   TrendingUp, TrendingDown, Minus, RefreshCw, Mail, 
-  MessageCircle, Bot, FileText 
+  MessageCircle, Bot, FileText, Wifi, WifiOff
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -67,6 +68,16 @@ export function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  const organizationId = 'default';
+
+  const { connected, onMetricsUpdate } = useSocketIO({
+    organizationId,
+    onMetricsUpdate: useCallback((newMetrics) => {
+      setMetrics(newMetrics);
+      setLastUpdated(new Date());
+    }, []),
+  });
+
   const fetchMetrics = async () => {
     setLoading(true);
     try {
@@ -94,10 +105,13 @@ export function AnalyticsDashboard() {
 
   useEffect(() => {
     fetchMetrics();
-    
-    const interval = setInterval(fetchMetrics, 30000);
-    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (connected) {
+      console.log('Connected to real-time updates');
+    }
+  }, [connected]);
 
   const formatTime = (minutes: number) => {
     if (minutes < 60) return `${Math.round(minutes)}m`;
@@ -138,6 +152,16 @@ export function AnalyticsDashboard() {
           <p className="text-muted-foreground">Real-time metrics and insights</p>
         </div>
         <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {connected ? (
+              <Wifi className="h-4 w-4 text-green-500" />
+            ) : (
+              <WifiOff className="h-4 w-4 text-red-500" />
+            )}
+            <span className="text-sm text-muted-foreground">
+              {connected ? 'Live' : 'Disconnected'}
+            </span>
+          </div>
           {lastUpdated && (
             <span className="text-sm text-muted-foreground">
               Last updated: {lastUpdated.toLocaleTimeString()}

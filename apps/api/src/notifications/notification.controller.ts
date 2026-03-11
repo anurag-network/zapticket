@@ -5,6 +5,7 @@ import {
   Delete,
   Param,
   Query,
+  Body,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -33,6 +34,27 @@ export class NotificationController {
   async getUnreadCount(@Request() req: any) {
     const count = await this.notificationService.getUnreadCount(req.user.id);
     return { count };
+  }
+
+  @Get('preferences')
+  async getPreferences(@Request() req: any) {
+    return this.notificationService.getPreferences(req.user.id);
+  }
+
+  @Post('preferences')
+  async updatePreferences(
+    @Request() req: any,
+    @Body() data: {
+      emailOnTicketAssigned?: boolean;
+      emailOnTicketReplied?: boolean;
+      emailOnMention?: boolean;
+      emailOnSlaBreach?: boolean;
+      emailOnTicketCreated?: boolean;
+      emailOnTicketClosed?: boolean;
+      emailOnCsatSurvey?: boolean;
+    }
+  ) {
+    return this.notificationService.updatePreferences(req.user.id, data);
   }
 
   @Post(':id/read')

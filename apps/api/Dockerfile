@@ -6,14 +6,17 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/database/package.json ./packages/database/
+COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/package.json ./apps/api/
 
 RUN pnpm install --frozen-lockfile
 
 COPY packages/database ./packages/database
+COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 
 RUN pnpm --filter @zapticket/database generate
+RUN pnpm --filter @zapticket/shared build
 RUN pnpm --filter @zapticket/api build
 
 FROM node:20-alpine AS runner
@@ -29,6 +32,7 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/database ./packages/database
+COPY --from=builder /app/packages/shared ./packages/shared
 
 ENV NODE_ENV=production
 ENV PORT=3001

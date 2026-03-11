@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ChannelModule } from './channel.module';
 import { SMSModule } from './sms/sms.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { FacebookModule } from './facebook/facebook.module';
@@ -7,6 +8,7 @@ import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
+    ChannelModule,
     SMSModule,
     WhatsAppModule,
     FacebookModule,
@@ -14,6 +16,7 @@ import { TelegramModule } from './telegram/telegram.module';
     TelegramModule,
   ],
   exports: [
+    ChannelModule,
     SMSModule,
     WhatsAppModule,
     FacebookModule,
